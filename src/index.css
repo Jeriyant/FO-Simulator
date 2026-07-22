@@ -1,0 +1,107 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;650&display=swap');
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+  --fo-bg: #e7e5e4;
+  --fo-canvas: #f5f5f4;
+  --fo-surface: #fffdf8;
+  --fo-surface-2: #f5f5f4;
+  --fo-text: #1c1917;
+  --fo-text-secondary: #44403c;
+  --fo-muted: #78716c;
+  --fo-border: #e7e5e4;
+  --fo-border-strong: #d6d3d1;
+  --fo-accent: #0f766e;
+  --fo-accent-hover: #0d9488;
+  --fo-accent-soft: #ecfdf5;
+  --fo-danger: #dc2626;
+  --fo-danger-soft: #fee2e2;
+  --fo-canvas-glow-a: rgba(20, 184, 166, 0.08);
+  --fo-canvas-glow-b: rgba(234, 88, 12, 0.06);
+  --fo-shadow: rgba(28, 25, 23, 0.12);
+  --fo-overlay: rgba(28, 25, 23, 0.55);
+  --fo-node-bg: #fffdf8;
+  --fo-node-border: #c4b8a5;
+  --fo-chrome: #fffdf8;
+  --fo-chrome-2: #f5f5f4;
+  --fo-chrome-text: #1c1917;
+  --fo-chrome-muted: #78716c;
+  --fo-chrome-border: #d6d3d1;
+  --fo-chrome-input: #ffffff;
+  --fo-chrome-soft: rgba(28, 25, 23, 0.04);
+  --fo-chrome-soft-hover: rgba(28, 25, 23, 0.08);
+  --fo-chrome-divider: rgba(28, 25, 23, 0.1);
+  --fo-chrome-accent-text: #0f766e;
+  --fo-chrome-meta-bg: #f5f5f4;
+  --fo-chrome-danger-bg: #fee2e2;
+  --fo-chrome-danger-text: #dc2626;
+  --fo-chrome-danger-hover: #fecaca;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --fo-bg: #0c0a09;
+  --fo-canvas: #1c1917;
+  --fo-surface: #292524;
+  --fo-surface-2: #1c1917;
+  --fo-text: #fafaf9;
+  --fo-text-secondary: #d6d3d1;
+  --fo-muted: #a8a29e;
+  --fo-border: #44403c;
+  --fo-border-strong: #57534e;
+  --fo-accent: #14b8a6;
+  --fo-accent-hover: #2dd4bf;
+  --fo-accent-soft: rgba(20, 184, 166, 0.16);
+  --fo-danger: #f87171;
+  --fo-danger-soft: rgba(248, 113, 113, 0.18);
+  --fo-canvas-glow-a: rgba(20, 184, 166, 0.12);
+  --fo-canvas-glow-b: rgba(251, 146, 60, 0.08);
+  --fo-shadow: rgba(0, 0, 0, 0.45);
+  --fo-overlay: rgba(0, 0, 0, 0.65);
+  --fo-node-bg: #292524;
+  --fo-node-border: #57534e;
+  --fo-chrome: #0c0a09;
+  --fo-chrome-2: #1c1917;
+  --fo-chrome-text: #fafaf9;
+  --fo-chrome-muted: #a8a29e;
+  --fo-chrome-border: #44403c;
+  --fo-chrome-input: rgba(0, 0, 0, 0.35);
+  --fo-chrome-soft: rgba(255, 255, 255, 0.06);
+  --fo-chrome-soft-hover: rgba(255, 255, 255, 0.1);
+  --fo-chrome-divider: rgba(255, 255, 255, 0.1);
+  --fo-chrome-accent-text: #5eead4;
+  --fo-chrome-meta-bg: rgba(0, 0, 0, 0.28);
+  --fo-chrome-danger-bg: rgba(220, 38, 38, 0.22);
+  --fo-chrome-danger-text: #fca5a5;
+  --fo-chrome-danger-hover: #fecaca;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--fo-bg);
+  color: var(--fo-text);
+}
+
+button,
+input,
+select {
+  font-family: inherit;
+}

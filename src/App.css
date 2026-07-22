@@ -1,0 +1,258 @@
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  width: 100vw;
+  overflow: hidden;
+  background: var(--fo-bg);
+  font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  color: var(--fo-text);
+}
+
+.app-body {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+.workspace {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.canvas-wrap {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  touch-action: none;
+  background:
+    radial-gradient(ellipse at 20% 0%, var(--fo-canvas-glow-a), transparent 45%),
+    radial-gradient(ellipse at 90% 20%, var(--fo-canvas-glow-b), transparent 40%),
+    var(--fo-canvas);
+}
+
+.app-copyright {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  z-index: 5;
+  pointer-events: none;
+  user-select: none;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--fo-muted);
+  white-space: nowrap;
+}
+
+.canvas-error {
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  height: 100%;
+  text-align: center;
+  color: var(--fo-muted);
+  font-size: 14px;
+  background: var(--fo-canvas);
+  padding: 24px;
+}
+
+.canvas-error-detail {
+  margin: 0;
+  font-size: 12px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  color: #991b1b;
+  max-width: 480px;
+  word-break: break-word;
+}
+
+.canvas-error button {
+  justify-self: center;
+  border: none;
+  background: #0f766e;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.react-flow__edge-path {
+  stroke-linecap: round;
+}
+
+/* Tali di atas box komponen agar tidak tertutup node */
+.react-flow__renderer .react-flow__edges {
+  z-index: 4;
+}
+
+.react-flow__renderer .react-flow__nodes {
+  z-index: 3;
+}
+
+.react-flow__nodesselection-rect {
+  background: rgba(37, 99, 235, 0.08) !important;
+  border: 2px solid rgba(37, 99, 235, 0.65) !important;
+  border-radius: 10px;
+}
+
+.react-flow__selection {
+  background: rgba(37, 99, 235, 0.1) !important;
+  border: 1.5px solid rgba(37, 99, 235, 0.55) !important;
+}
+
+.react-flow__edge.fo-edge-live .react-flow__edge-path {
+  stroke-dasharray: 8 6;
+  animation: fo-edge-flow 0.7s linear infinite;
+}
+
+.react-flow__edge.fo-edge-opm .react-flow__edge-path {
+  stroke-dasharray: 8 6;
+  animation: fo-edge-flow 0.7s linear infinite;
+}
+
+.react-flow__edge.fo-edge-lan-dhcp .react-flow__edge-path {
+  stroke-dasharray: 8 6;
+  animation: fo-edge-flow 0.7s linear infinite;
+}
+
+@keyframes fo-edge-flow {
+  to {
+    stroke-dashoffset: -14;
+  }
+}
+
+.react-flow__edge-textbg {
+  stroke: #d6d3d1;
+  stroke-width: 1;
+}
+
+.react-flow__edge-text {
+  pointer-events: none;
+}
+
+.react-flow__controls {
+  box-shadow: 0 4px 14px rgba(28, 25, 23, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.react-flow__minimap {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(28, 25, 23, 0.1);
+}
+
+.panel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--fo-overlay);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  padding-top: max(24px, env(safe-area-inset-top));
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+.panel-overlay-card {
+  width: min(480px, 100%);
+  max-height: min(96vh, 1100px);
+  overflow: auto;
+  background: linear-gradient(180deg, var(--fo-chrome) 0%, var(--fo-chrome-2) 100%);
+  border: 1px solid var(--fo-chrome-border);
+  border-radius: 12px;
+  box-shadow: 0 20px 50px var(--fo-shadow);
+  color: var(--fo-chrome-text);
+}
+
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--fo-overlay);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  padding-top: max(24px, env(safe-area-inset-top));
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+.settings-overlay-card {
+  width: min(760px, 100%);
+  max-height: min(90vh, 920px);
+  overflow: auto;
+  border-radius: 12px;
+  box-shadow: 0 20px 50px var(--fo-shadow);
+  border: 1px solid var(--fo-chrome-border);
+  background: var(--fo-chrome);
+}
+
+.settings-overlay-card .settings-panel {
+  width: 100%;
+  border-left: none;
+  max-height: none;
+  overflow: visible;
+  padding: 0 0 22px;
+  gap: 14px;
+}
+
+.quick-overlay-card {
+  width: min(440px, 100%);
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
+  .app-shell--mobile .workspace {
+    width: 100%;
+  }
+
+  .canvas-wrap {
+    min-height: 0;
+    flex: 1;
+  }
+
+  .app-copyright {
+    font-size: 9px;
+    bottom: max(6px, env(safe-area-inset-bottom));
+    max-width: 90vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .panel-overlay,
+  .settings-overlay {
+    padding: 0;
+    align-items: stretch;
+    place-items: stretch;
+  }
+
+  .panel-overlay-card,
+  .settings-overlay-card {
+    width: 100%;
+    max-height: none;
+    height: 100%;
+    border-radius: 0;
+    border: none;
+  }
+
+  .settings-overlay-card .settings-panel {
+    min-height: 100%;
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+  }
+}

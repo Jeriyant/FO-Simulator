@@ -1,0 +1,1851 @@
+.fo-node {
+  min-width: 168px;
+  background: var(--fo-node-bg);
+  border: 1.5px solid var(--fo-node-border);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px var(--fo-shadow);
+  font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  color: var(--fo-text);
+  overflow: visible;
+}
+
+.fo-node.selected {
+  border-color: #2563eb !important;
+  border-width: 2.5px;
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.45),
+    0 0 0 6px rgba(59, 130, 246, 0.22),
+    0 10px 28px rgba(37, 99, 235, 0.22);
+  background: #eff6ff;
+}
+
+.fo-node.selected .fo-node-header {
+  box-shadow: inset 0 -2px 0 rgba(255, 255, 255, 0.35);
+  filter: brightness(1.08);
+}
+
+.fo-node-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  border-radius: 8px 8px 0 0;
+  cursor: grab;
+  user-select: none;
+}
+
+.fo-node-header-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  opacity: 0.95;
+}
+
+.fo-node-header-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fo-node-header:active {
+  cursor: grabbing;
+}
+
+.fo-olt .fo-node-header { background: #1e40af; }
+.fo-sr .fo-node-header { background: #dc2626; }
+.fo-sb .fo-node-header { background: #eab308; }
+.fo-pc .fo-node-header { background: #0369a1; }
+
+.fo-icon-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  color: var(--fo-text);
+  position: relative;
+  padding: 0 6px;
+}
+
+.fo-icon-node-badge {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #0369a1;
+  color: #fff;
+  border: 2px solid #fff;
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.28);
+}
+
+.fo-icon-node.selected .fo-icon-node-badge {
+  border-color: #2563eb;
+  border-width: 3px;
+  transform: scale(1.06);
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.4),
+    0 0 0 6px rgba(59, 130, 246, 0.2),
+    0 6px 18px rgba(37, 99, 235, 0.35);
+}
+
+.fo-icon-node.selected .fo-icon-node-label {
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.fo-icon-node-label {
+  font-size: 11px;
+  font-weight: 650;
+  color: #0369a1;
+  line-height: 1.2;
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.fo-icon-node .fo-handle {
+  top: 22px !important;
+}
+
+.fo-icon-node-ports {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.fo-icon-node-ports .fo-icon-node-badge {
+  width: 100%;
+  height: 100%;
+}
+
+/* Override centering tunggal — pin ke 4 sisi badge */
+.fo-icon-node-ports .fo-side-handle {
+  top: auto !important;
+  z-index: 5;
+}
+
+.fo-icon-node-ports .fo-side-handle.react-flow__handle-left {
+  left: 0 !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%);
+}
+
+.fo-icon-node-ports .fo-side-handle.react-flow__handle-right {
+  left: auto !important;
+  right: 0 !important;
+  top: 50% !important;
+  transform: translate(50%, -50%);
+}
+
+.fo-icon-node-ports .fo-side-handle.react-flow__handle-top {
+  left: 50% !important;
+  top: 0 !important;
+  transform: translate(-50%, -50%);
+}
+
+.fo-icon-node-ports .fo-side-handle.react-flow__handle-bottom {
+  left: 50% !important;
+  top: auto !important;
+  bottom: 0 !important;
+  transform: translate(-50%, 50%);
+}
+
+.fo-cn .fo-icon-node-badge {
+  background: #57534e;
+  box-shadow: 0 4px 12px rgba(87, 83, 78, 0.28);
+}
+
+.fo-cn .fo-icon-node-label {
+  color: var(--fo-muted);
+}
+
+.fo-barrel .fo-icon-node-badge {
+  background: #2563eb;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.fo-barrel .fo-icon-node-label {
+  color: #1d4ed8;
+}
+
+.fo-onu .fo-node-header { background: #047857; }
+
+/* —— ONU / XPON sebagai perangkat CPE (bukan multimeters) —— */
+.fo-onu.fo-onu-device {
+  position: relative;
+  min-width: 0;
+  width: 168px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+  font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  color: #134e4a;
+}
+
+.fo-onu.fo-onu-device.selected {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.fo-onu.fo-onu-device.selected .fo-onu-shell {
+  outline: 2.5px solid #2563eb;
+  box-shadow:
+    0 0 0 5px rgba(37, 99, 235, 0.32),
+    0 12px 26px rgba(15, 23, 42, 0.18);
+}
+
+.fo-onu-shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 11px 11px;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f0fdfa 55%, #ccfbf1 100%);
+  border: 1.5px solid #99f6e4;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 8px 18px rgba(15, 118, 110, 0.14);
+}
+
+.fo-onu-stripe {
+  position: absolute;
+  top: 0;
+  left: 14px;
+  right: 14px;
+  height: 4px;
+  border-radius: 0 0 6px 6px;
+  background: linear-gradient(90deg, #047857, #14b8a6 55%, #0f766e);
+}
+
+.fo-onu-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.fo-onu-chip {
+  flex-shrink: 0;
+  padding: 3px 7px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #ecfdf5;
+  background: #047857;
+  box-shadow: 0 2px 6px rgba(4, 120, 87, 0.28);
+}
+
+.fo-onu-title {
+  flex: 1 1 auto;
+  min-width: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.fo-onu-title strong {
+  font-size: 13px;
+  font-weight: 750;
+  color: #134e4a;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.fo-onu-title span {
+  font-size: 10px;
+  font-weight: 500;
+  color: #0f766e;
+  opacity: 0.75;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.fo-onu-face {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 8px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #99f6e4;
+  box-shadow: inset 0 1px 2px rgba(15, 118, 110, 0.06);
+}
+
+.fo-onu-leds {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+
+.fo-onu-led {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.fo-onu-led i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #d1d5db;
+  border: 1px solid #9ca3af;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.7);
+}
+
+.fo-onu-led em {
+  font-style: normal;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+}
+
+.fo-onu-led.on i {
+  background: #22c55e;
+  border-color: #15803d;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.55);
+}
+
+.fo-onu-led.on.pon i {
+  background: #14b8a6;
+  border-color: #0f766e;
+  box-shadow: 0 0 6px rgba(20, 184, 166, 0.55);
+}
+
+.fo-onu-led.on.lan i {
+  background: #38bdf8;
+  border-color: #0284c7;
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.5);
+}
+
+.fo-onu-led.on.lan.blink i {
+  animation: fo-lan-cyan-blink 0.7s ease-in-out infinite;
+}
+
+.fo-onu-led.on.wlan i {
+  background: #facc15;
+  border-color: #eab308;
+  box-shadow:
+    0 0 10px rgba(250, 204, 21, 0.95),
+    0 0 18px rgba(234, 179, 8, 0.75);
+}
+
+.fo-onu-led.on.wlan.blink i {
+  animation: fo-wlan-yellow-blink 0.7s ease-in-out infinite;
+}
+
+.fo-onu-led.warn i {
+  background: #f59e0b;
+  border-color: #d97706;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.55);
+  animation: fo-onu-blink 1.1s ease-in-out infinite;
+}
+
+.fo-onu-led.los i {
+  background: #ef4444;
+  border-color: #b91c1c;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.7);
+  animation: fo-onu-blink 0.9s ease-in-out infinite;
+}
+
+@keyframes fo-onu-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.fo-onu-readout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.fo-onu-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.fo-onu-metric span {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #0d9488;
+}
+
+.fo-onu-metric strong {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #134e4a;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.fo-onu-metric em {
+  font-style: normal;
+  font-size: 0.72em;
+  margin-left: 2px;
+  opacity: 0.65;
+}
+
+.fo-onu-pill {
+  align-self: flex-start;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #99f6e4;
+}
+
+.fo-onu-pill.status-perfect {
+  background: #dbeafe;
+  color: #1e3a8a;
+  border-color: #93c5fd;
+}
+
+.fo-onu-pill.status-good {
+  background: #cffafe;
+  color: #0e7490;
+  border-color: #67e8f9;
+}
+
+.fo-onu-pill.status-low {
+  background: #fef9c3;
+  color: #a16207;
+  border-color: #fde047;
+}
+
+.fo-onu-pill.status-bad {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+
+.fo-onu-pill.status-disconnected {
+  background: #f5f5f4;
+  color: #78716c;
+  border-color: #d6d3d1;
+}
+
+.fo-onu-art {
+  display: flex;
+  justify-content: center;
+  margin: -2px 0 0;
+  pointer-events: none;
+}
+
+.fo-onu-svg {
+  width: 100%;
+  max-width: 176px;
+  height: auto;
+  display: block;
+}
+
+.fo-onu-svg .onu-art-led {
+  fill: #cbd5e1;
+  stroke: #94a3b8;
+  stroke-width: 0.8;
+}
+
+.fo-onu-svg .onu-art-led.on {
+  fill: #22c55e;
+  stroke: #15803d;
+}
+
+.fo-onu-svg .onu-art-led.pon {
+  fill: #14b8a6;
+  stroke: #0f766e;
+}
+
+.fo-onu-svg .onu-art-led.lan {
+  fill: #38bdf8;
+  stroke: #0284c7;
+  filter: drop-shadow(0 0 3px #38bdf8);
+}
+
+.fo-onu-svg .onu-art-led.lan.blink {
+  animation: fo-lan-svg-blink 0.7s ease-in-out infinite;
+}
+
+.fo-onu-svg .onu-art-led.wlan {
+  fill: #facc15;
+  stroke: #eab308;
+  filter: drop-shadow(0 0 4px #facc15);
+}
+
+.fo-onu-svg .onu-art-led.wlan.blink {
+  animation: fo-wlan-svg-blink 0.7s ease-in-out infinite;
+}
+
+.fo-onu-svg .onu-art-led.warn {
+  fill: #f59e0b;
+  stroke: #d97706;
+}
+
+.fo-onu-svg .onu-art-led.los {
+  fill: #ef4444;
+  stroke: #b91c1c;
+}
+
+.fo-onu-device .fo-comment {
+  margin: 0;
+  padding: 4px 6px;
+  font-size: 10px;
+  color: #0f766e;
+  background: rgba(204, 251, 241, 0.65);
+  border-color: #99f6e4;
+}
+
+.fo-onu-device .fo-comment-input {
+  font-size: 10px;
+}
+
+.fo-onu .fo-onu-handle.react-flow__handle-top {
+  left: 50% !important;
+  top: 0 !important;
+  transform: translate(-50%, -50%);
+}
+
+.fo-onu .fo-onu-handle.react-flow__handle-bottom {
+  left: 50% !important;
+  bottom: 0 !important;
+  top: auto !important;
+  transform: translate(-50%, 50%);
+}
+
+.fo-onu .fo-onu-handle.react-flow__handle-left {
+  left: 0 !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%);
+}
+
+.fo-onu .fo-onu-handle.react-flow__handle-right {
+  right: 0 !important;
+  left: auto !important;
+  top: 50% !important;
+  transform: translate(50%, -50%);
+}
+
+/* —— OPM multimeters (bukan kotak node biasa) —— */
+.fo-opm.fo-opm-meter {
+  position: relative;
+  min-width: 0;
+  width: 138px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+  font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+}
+
+.fo-opm.fo-opm-meter.selected {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.fo-opm.fo-opm-meter.selected .fo-opm-chassis {
+  outline: 2.5px solid #2563eb;
+  box-shadow:
+    0 0 0 5px rgba(37, 99, 235, 0.35),
+    0 14px 28px rgba(15, 23, 42, 0.35);
+}
+
+.fo-opm-chassis {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 12px 14px;
+  border-radius: 22px 22px 18px 18px;
+  background:
+    linear-gradient(165deg, #3f3f46 0%, #27272a 42%, #18181b 100%);
+  border: 2px solid #52525b;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -8px 16px rgba(0, 0, 0, 0.35),
+    0 10px 22px rgba(15, 23, 42, 0.28);
+  color: #fafafa;
+}
+
+.fo-opm-grip {
+  height: 5px;
+  margin: 0 10px;
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #71717a 0 4px,
+      transparent 4px 8px
+    );
+  opacity: 0.55;
+}
+
+.fo-opm-grip-top {
+  margin-bottom: -2px;
+}
+
+.fo-opm-grip-bottom {
+  margin-top: 2px;
+}
+
+.fo-opm-plate {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+.fo-opm-model {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fbbf24;
+}
+
+.fo-opm-serial {
+  font-size: 10px;
+  font-weight: 650;
+  color: #d4d4d8;
+  max-width: 70px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fo-opm-lcd {
+  position: relative;
+  border-radius: 10px;
+  padding: 8px 10px 7px;
+  background: linear-gradient(180deg, #052e16 0%, #14532d 100%);
+  border: 2px solid #3f3f46;
+  box-shadow:
+    inset 0 0 0 1px #166534,
+    inset 0 8px 14px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.fo-opm-lcd.is-off {
+  background: linear-gradient(180deg, #1c1917 0%, #292524 100%);
+  box-shadow: inset 0 0 0 1px #44403c, inset 0 8px 14px rgba(0, 0, 0, 0.5);
+}
+
+.fo-opm-lcd.is-off .fo-opm-lcd-value,
+.fo-opm-lcd.is-off .fo-opm-lcd-label {
+  color: #57534e;
+  text-shadow: none;
+}
+
+.fo-opm-lcd-glare {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    transparent 38%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.fo-opm-lcd-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.fo-opm-lcd-row.sub {
+  margin-top: 2px;
+}
+
+.fo-opm-lcd-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #86efac;
+  opacity: 0.85;
+}
+
+.fo-opm-lcd-value {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: #bbf7d0;
+  text-shadow: 0 0 8px rgba(74, 222, 128, 0.45);
+  font-variant-numeric: tabular-nums;
+}
+
+.fo-opm-lcd-row.sub .fo-opm-lcd-value {
+  font-size: 12px;
+  text-shadow: none;
+}
+
+.fo-opm-lcd-value em {
+  font-style: normal;
+  font-size: 0.72em;
+  margin-left: 3px;
+  opacity: 0.8;
+}
+
+.fo-opm-dial-wrap {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 2px 0;
+}
+
+.fo-opm-dial-svg {
+  width: 72px;
+  height: 72px;
+  display: block;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
+}
+
+.fo-opm-dial-ring {
+  fill: #52525b;
+  stroke: #a1a1aa;
+  stroke-width: 2;
+}
+
+.fo-opm-dial-face {
+  fill: #e4e4e7;
+  stroke: #71717a;
+  stroke-width: 1.5;
+}
+
+.fo-opm-dial-tick {
+  stroke: #52525b;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+
+.fo-opm-dial-tick.major {
+  stroke: #18181b;
+  stroke-width: 2.2;
+}
+
+.fo-opm-dial-needle {
+  fill: #db2777;
+}
+
+.fo-opm-dial-hub {
+  fill: #3f3f46;
+  stroke: #a1a1aa;
+  stroke-width: 1.5;
+}
+
+.fo-opm-dial-hub-core {
+  fill: #fbbf24;
+}
+
+.fo-opm-keys {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fo-opm-keys span {
+  width: 22px;
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #52525b, #3f3f46);
+  border: 1px solid #71717a;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.fo-opm-keys span:nth-child(2) {
+  background: linear-gradient(180deg, #fbbf24, #d97706);
+  border-color: #f59e0b;
+}
+
+.fo-opm-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  align-self: flex-start;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(24, 24, 27, 0.7);
+  border: 1px solid #52525b;
+  color: #a1a1aa;
+}
+
+.fo-opm-link.status-connected {
+  color: #86efac;
+  border-color: #166534;
+  background: rgba(20, 83, 45, 0.45);
+}
+
+.fo-opm-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #71717a;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.fo-opm-link.status-connected .fo-opm-led {
+  background: #22c55e;
+  box-shadow:
+    0 0 0 1px #166534,
+    0 0 8px rgba(34, 197, 94, 0.8);
+}
+
+.fo-opm-jacks {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  padding: 2px 0 0;
+}
+
+.fo-opm-jack {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #52525b 0%, #18181b 55%, #09090b 100%);
+  border: 2px solid #a1a1aa;
+  box-shadow: inset 0 0 0 3px #27272a;
+}
+
+.fo-opm-jack.in {
+  border-color: #22d3ee;
+}
+
+.fo-opm-jack.out {
+  border-color: #f472b6;
+}
+
+.fo-opm-brand {
+  text-align: center;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+}
+
+.fo-opm-meter .fo-comment {
+  margin: 0;
+  padding: 4px 6px;
+  font-size: 10px;
+  color: #d4d4d8;
+  background: rgba(24, 24, 27, 0.55);
+  border-color: #52525b;
+}
+
+.fo-opm-meter .fo-comment-input {
+  font-size: 10px;
+  background: #18181b;
+  color: #fafafa;
+  border-color: #71717a;
+}
+
+.fo-node-label {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--fo-text);
+  line-height: 1.3;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fo-node-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fo-node-body {
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fo-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.fo-field span {
+  color: var(--fo-muted);
+}
+
+.fo-field strong {
+  font-variant-numeric: tabular-nums;
+  color: var(--fo-text);
+}
+
+.fo-ratio {
+  flex-shrink: 0;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+}
+
+.fo-sr .fo-ratio {
+  color: #b91c1c;
+}
+
+.fo-sb .fo-ratio {
+  color: #a16207;
+}
+
+.fo-brand {
+  margin-top: -2px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fo-muted);
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.fo-icon-node-brand {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--fo-muted);
+  line-height: 1.2;
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.fo-comment {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--fo-text-secondary);
+  border-top: 1px dashed var(--fo-border);
+  padding-top: 6px;
+  line-height: 1.35;
+  cursor: text;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.fo-comment.empty {
+  color: var(--fo-muted);
+  font-style: italic;
+}
+
+.fo-comment-input {
+  width: 100%;
+  margin-top: 2px;
+  font: inherit;
+  font-size: 11px;
+  color: var(--fo-text);
+  border: 1px solid var(--fo-border-strong);
+  border-radius: 6px;
+  padding: 6px 8px;
+  resize: vertical;
+  min-height: 44px;
+  background: var(--fo-surface-2);
+  line-height: 1.35;
+}
+
+.fo-comment-input:focus {
+  outline: none;
+  border-color: var(--fo-accent);
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.2);
+}
+
+.fo-status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.fo-status.status-overload {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.fo-status.status-perfect {
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+
+.fo-status.status-good {
+  background: #cffafe;
+  color: #0e7490;
+}
+
+.fo-status.status-ok {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.fo-status.status-low {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+.fo-status.status-bad {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.fo-status.status-weak {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+.fo-status.status-connected {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.fo-status.status-disconnected {
+  background: var(--fo-surface-2);
+  color: var(--fo-muted);
+}
+
+.fo-onu.fo-onu-device.status-bad .fo-onu-shell {
+  border-color: #fca5a5;
+}
+
+.fo-onu.fo-onu-device.status-perfect .fo-onu-shell {
+  border-color: #93c5fd;
+}
+
+.fo-onu.fo-onu-device.status-good .fo-onu-shell {
+  border-color: #5eead4;
+}
+
+.fo-onu.fo-onu-device.status-low .fo-onu-shell {
+  border-color: #fde047;
+}
+
+.fo-onu.fo-onu-device.status-disconnected .fo-onu-shell {
+  border-color: #d6d3d1;
+  background: linear-gradient(180deg, #fafaf9 0%, #f5f5f4 100%);
+}
+
+.fo-handle {
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 50% !important;
+  background: #0f766e !important;
+  border: 2px solid #fff !important;
+  box-shadow: 0 0 0 1px #0f766e;
+  outline: none !important;
+}
+
+/* OLT / ONU / OPM / Patchcord / Sleeve / Barel: titik tersembunyi kecuali dipakai, hover, atau sedang tarik tali */
+.fo-handle.fo-handle-auto {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.fo-handle.fo-handle-auto.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.fo-node .react-flow__handle-top.fo-handle {
+  left: 50% !important;
+  top: 0 !important;
+  transform: translate(-50%, -50%);
+}
+
+.fo-node .react-flow__handle-bottom.fo-handle {
+  bottom: 0 !important;
+  top: auto !important;
+  transform: translate(-50%, 50%);
+}
+
+/* Titik bawah tunggal (default) di tengah; Splitter Box pakai left inline per port */
+.fo-node:not(.fo-sb) .react-flow__handle-bottom.fo-handle {
+  left: 50% !important;
+}
+
+.fo-handle-opm {
+  width: 12px !important;
+  height: 12px !important;
+  z-index: 5;
+}
+
+.fo-opm .fo-handle-opm-stack.react-flow__handle-left {
+  top: 50% !important;
+  left: 0 !important;
+  transform: translate(-50%, -50%);
+}
+
+.fo-opm .fo-handle-opm-stack.react-flow__handle-right {
+  top: 50% !important;
+  right: 0 !important;
+  left: auto !important;
+  transform: translate(50%, -50%);
+}
+
+.fo-opm .fo-handle-opm-stack.react-flow__handle-top {
+  left: 50% !important;
+  top: 0 !important;
+  transform: translate(-50%, -50%);
+}
+
+.fo-opm .fo-handle-opm-stack.react-flow__handle-bottom {
+  left: 50% !important;
+  bottom: 0 !important;
+  top: auto !important;
+  transform: translate(-50%, 50%);
+}
+
+.fo-handle-opm-probe {
+  z-index: 6;
+}
+
+.fo-handle-opm.is-linked {
+  background: #0891b2 !important;
+  box-shadow: 0 0 0 1px #0891b2, 0 0 0 0 rgba(8, 145, 178, 0.55);
+  animation: fo-handle-pulse 1.4s ease-out infinite;
+}
+
+@keyframes fo-handle-pulse {
+  0% {
+    box-shadow: 0 0 0 1px #0891b2, 0 0 0 0 rgba(8, 145, 178, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 1px #0891b2, 0 0 0 8px rgba(8, 145, 178, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 1px #0891b2, 0 0 0 0 rgba(8, 145, 178, 0);
+  }
+}
+
+.fo-handle-small {
+  background: #2563eb !important;
+  box-shadow: 0 0 0 1px #2563eb;
+}
+
+.fo-handle-large {
+  background: #dc2626 !important;
+  box-shadow: 0 0 0 1px #dc2626;
+}
+
+.fo-more-ports {
+  position: absolute;
+  right: 14px;
+  bottom: 8px;
+  font-size: 10px;
+  color: #a8a29e;
+}
+
+.fo-onu-led.on.wlan.blink i {
+  animation: fo-wlan-yellow-blink 0.7s ease-in-out infinite;
+}
+
+@keyframes fo-wlan-yellow-blink {
+  0%,
+  100% {
+    opacity: 1;
+    background: #fde047;
+    box-shadow:
+      0 0 12px rgba(250, 204, 21, 1),
+      0 0 22px rgba(234, 179, 8, 0.9);
+  }
+  50% {
+    opacity: 0.35;
+    background: #ca8a04;
+    box-shadow: 0 0 2px rgba(202, 138, 4, 0.4);
+  }
+}
+
+@keyframes fo-lan-cyan-blink {
+  0%,
+  100% {
+    opacity: 1;
+    background: #7dd3fc;
+    box-shadow:
+      0 0 12px rgba(56, 189, 248, 1),
+      0 0 20px rgba(14, 165, 233, 0.85);
+  }
+  50% {
+    opacity: 0.35;
+    background: #0369a1;
+    box-shadow: 0 0 2px rgba(3, 105, 161, 0.4);
+  }
+}
+
+@keyframes fo-lan-svg-blink {
+  0%,
+  100% {
+    fill: #7dd3fc;
+    opacity: 1;
+  }
+  50% {
+    fill: #0369a1;
+    opacity: 0.4;
+  }
+}
+
+@keyframes fo-wlan-svg-blink {
+  0%,
+  100% {
+    fill: #fde047;
+    opacity: 1;
+  }
+  50% {
+    fill: #a16207;
+    opacity: 0.4;
+  }
+}
+
+.fo-onu-speed-badge {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+/* ONU Dual Band — palet indigo (beda jelas dari Single hijau emerald) */
+.fo-onu-device.is-dual {
+  color: #312e81;
+}
+
+.fo-onu-device.is-dual .fo-onu-shell {
+  background: linear-gradient(180deg, #ffffff 0%, #eef2ff 55%, #e0e7ff 100%);
+  border-color: #a5b4fc;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 8px 18px rgba(79, 70, 229, 0.16);
+}
+
+.fo-onu-device.is-dual .fo-onu-stripe {
+  background: linear-gradient(90deg, #4338ca, #818cf8 55%, #6366f1);
+}
+
+.fo-onu-device.is-dual .fo-onu-chip {
+  background: #4f46e5;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.35);
+}
+
+.fo-onu-device.is-dual .fo-onu-title strong {
+  color: #312e81;
+}
+
+.fo-onu-device.is-dual .fo-onu-title span {
+  color: #4338ca;
+}
+
+.fo-onu-device.is-dual .fo-onu-speed-badge {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.fo-onu-device.is-dual .fo-onu-face {
+  border-color: #c7d2fe;
+  box-shadow: inset 0 1px 2px rgba(79, 70, 229, 0.08);
+}
+
+.fo-onu-device.is-dual .fo-onu-wifi-info {
+  color: #4338ca;
+}
+
+.fo-onu-device.is-dual .fo-onu-metric span {
+  color: #6366f1;
+}
+
+.fo-onu-device.is-dual .fo-onu-metric strong {
+  color: #312e81;
+}
+
+.fo-onu-wifi-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 10px;
+  color: #0f766e;
+}
+
+.fo-onu-wifi-info em {
+  font-style: normal;
+  opacity: 0.65;
+  margin-right: 4px;
+}
+
+.fo-lan-handle {
+  background: #0369a1 !important;
+  box-shadow: 0 0 0 1px #0369a1;
+}
+
+.fo-wlan-handle {
+  background: #7c3aed !important;
+  box-shadow: 0 0 0 1px #7c3aed;
+}
+
+@keyframes fo-wireless-dash {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+@keyframes fo-wifi-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    stroke-width: 2;
+  }
+  50% {
+    opacity: 1;
+    stroke-width: 2.6;
+  }
+}
+
+@keyframes fo-wifi-dhcp-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    stroke-width: 2.2;
+  }
+  50% {
+    opacity: 1;
+    stroke-width: 3.2;
+  }
+}
+
+.fo-wifi-arc {
+  animation: fo-wifi-pulse 1.1s ease-in-out infinite;
+}
+
+.fo-wifi-arc.static {
+  animation: none;
+  opacity: 0.55;
+}
+
+.fo-wifi-arc.dhcp {
+  animation: fo-wifi-dhcp-pulse 0.75s ease-in-out infinite;
+}
+
+.fo-wireless-waves.is-dhcp .fo-wifi-label {
+  opacity: 1;
+}
+
+.fo-wifi-label {
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+@keyframes fo-online-blink {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 10px #22c55e;
+  }
+  50% {
+    opacity: 0.3;
+    box-shadow: 0 0 2px #16a34a;
+  }
+}
+
+/* Internet — globe + cloud vector */
+.fo-internet {
+  width: 168px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  position: relative;
+}
+.fo-internet.selected .fo-internet-card {
+  outline: 2.5px solid #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.28);
+}
+.fo-internet-card {
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(165deg, #f0f9ff 0%, #e0f2fe 45%, #bae6fd 100%);
+  border: 1.5px solid #7dd3fc;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 10px 22px rgba(2, 132, 199, 0.18);
+}
+.fo-internet-art {
+  position: relative;
+  padding: 6px 4px 0;
+}
+.fo-internet-svg {
+  width: 100%;
+  height: 108px;
+  display: block;
+}
+.fo-inet-orbit {
+  transform-origin: 90px 48px;
+  animation: fo-inet-spin 14s linear infinite;
+}
+.fo-inet-orbit-2 {
+  animation-duration: 22s;
+  animation-direction: reverse;
+}
+.fo-inet-dot {
+  animation: fo-inet-pulse 1.8s ease-in-out infinite;
+}
+.fo-inet-dot-2 {
+  animation-delay: 0.4s;
+}
+.fo-inet-dot-3 {
+  animation-delay: 0.9s;
+}
+.fo-inet-cloud {
+  animation: fo-inet-float 3.6s ease-in-out infinite;
+}
+@keyframes fo-inet-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fo-inet-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    r: 2.4;
+  }
+  50% {
+    opacity: 1;
+    r: 3.6;
+  }
+}
+@keyframes fo-inet-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+.fo-internet-body {
+  margin-top: -8px;
+  padding: 6px 12px 10px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+.fo-internet-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 750;
+  color: #0c4a6e;
+  letter-spacing: -0.01em;
+}
+.fo-internet-brand {
+  display: block;
+  font-size: 10px;
+  color: #0284c7;
+  margin-top: 1px;
+}
+.fo-internet-dhcp {
+  margin-top: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #075985;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.fo-internet-dhcp-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  border: 1px solid #7dd3fc;
+  color: #0369a1;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.fo-internet-dhcp.on .fo-internet-dhcp-pill {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
+}
+.fo-internet-dhcp.off .fo-internet-dhcp-pill {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #64748b;
+}
+.fo-internet-dhcp em {
+  font-style: normal;
+  font-weight: 600;
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: #0c4a6e;
+}
+
+/* Mikrotik */
+.fo-mikrotik {
+  width: 168px;
+  position: relative;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.fo-mikrotik.selected .fo-mikrotik-box {
+  outline: 2.5px solid #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.28);
+}
+.fo-mikrotik-box {
+  padding: 10px;
+  border-radius: 10px;
+  background: linear-gradient(165deg, #44403c, #1c1917);
+  border: 2px solid #a8a29e;
+  color: #fafaf9;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fo-mikrotik-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.fo-mikrotik-logo {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #fbbf24;
+}
+.fo-mikrotik-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #57534e;
+}
+.fo-mikrotik-led.on {
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+}
+.fo-mikrotik-led.on.blink {
+  animation: fo-online-blink 0.85s ease-in-out infinite;
+}
+.fo-mikrotik-vents {
+  height: 6px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(90deg, #78716c 0 3px, transparent 3px 6px);
+  opacity: 0.5;
+}
+.fo-mikrotik-box strong {
+  font-size: 13px;
+}
+.fo-mikrotik-brand {
+  font-size: 10px;
+  color: #a8a29e;
+}
+.fo-mikrotik-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 9px;
+  color: #d6d3d1;
+}
+.fo-mikrotik-wan {
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: #86efac;
+}
+.fo-mikrotik-wan.off {
+  color: #a8a29e;
+}
+.fo-mikrotik-wan em,
+.fo-mikrotik-lan-dhcp {
+  display: block;
+  font-style: normal;
+  font-size: 9px;
+  color: #a8a29e;
+}
+.fo-mikrotik-ports {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+.fo-mikrotik-ports span,
+.fo-mikrotik-port-led {
+  flex: 1;
+  text-align: center;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 3px 0;
+  border-radius: 3px;
+  background: #292524;
+  color: #78716c;
+  border: 1px solid #57534e;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+.fo-mikrotik-port-led.wan.on {
+  background: #14532d;
+  color: #86efac;
+  border-color: #22c55e;
+  box-shadow:
+    0 0 6px rgba(34, 197, 94, 0.65),
+    inset 0 0 4px rgba(34, 197, 94, 0.35);
+}
+.fo-mikrotik-port-led.lan.on {
+  background: #0c4a6e;
+  color: #7dd3fc;
+  border-color: #38bdf8;
+  box-shadow:
+    0 0 6px rgba(56, 189, 248, 0.65),
+    inset 0 0 4px rgba(56, 189, 248, 0.35);
+}
+
+/* Smartphone */
+.fo-phone {
+  width: 120px;
+  position: relative;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.fo-phone.selected .fo-phone-device {
+  outline: 2.5px solid #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.28);
+}
+.fo-phone-device {
+  position: relative;
+  border-radius: 18px;
+  padding: 10px 8px 12px;
+  background: #18181b;
+  border: 2px solid #52525b;
+}
+.fo-phone-online {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #71717a;
+  z-index: 2;
+}
+.fo-phone-online.on {
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+}
+.fo-phone-online.on.blink {
+  animation: fo-online-blink 0.85s ease-in-out infinite;
+}
+.fo-phone-notch {
+  width: 36px;
+  height: 5px;
+  margin: 0 auto 6px;
+  border-radius: 999px;
+  background: #3f3f46;
+}
+.fo-phone-screen {
+  border-radius: 10px;
+  padding: 8px;
+  background: #27272a;
+  color: #fafafa;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 120px;
+}
+.fo-phone-screen strong {
+  font-size: 12px;
+}
+.fo-phone-brand {
+  font-size: 9px;
+  color: #a1a1aa;
+  margin-bottom: 4px;
+}
+.fo-phone-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.fo-phone-row em {
+  font-style: normal;
+  color: #a78bfa;
+}
+.fo-phone-speed {
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #c4b5fd;
+}
+.fo-phone-status {
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.fo-phone-status.on {
+  color: #4ade80;
+}
+.fo-phone-status.off {
+  color: #a1a1aa;
+}
+.fo-phone-off {
+  font-size: 10px;
+  color: #a1a1aa;
+  margin-top: 8px;
+}
+.fo-phone-home {
+  width: 28px;
+  height: 4px;
+  margin: 8px auto 0;
+  border-radius: 999px;
+  background: #52525b;
+}
+
+/* Komputer */
+.fo-pc {
+  width: 148px;
+  position: relative;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.fo-pc.selected .fo-pc-monitor {
+  outline: 2.5px solid #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.28);
+}
+.fo-pc-tower {
+  position: relative;
+}
+.fo-pc-online {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #64748b;
+  z-index: 3;
+  border: 1px solid #334155;
+}
+.fo-pc-online.on {
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+  border-color: #16a34a;
+}
+.fo-pc-online.on.blink {
+  animation: fo-online-blink 0.85s ease-in-out infinite;
+}
+.fo-pc-monitor {
+  border-radius: 10px;
+  padding: 8px;
+  background: #334155;
+  border: 2px solid #64748b;
+}
+.fo-pc-screen {
+  border-radius: 6px;
+  padding: 8px;
+  background: #0f172a;
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 110px;
+}
+.fo-pc-screen strong {
+  font-size: 12px;
+  color: #f8fafc;
+}
+.fo-pc-screen > span {
+  font-size: 9px;
+  color: #94a3b8;
+}
+.fo-pc-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.fo-pc-row em {
+  font-style: normal;
+  color: #38bdf8;
+}
+.fo-pc-status {
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.fo-pc-status.on {
+  color: #4ade80;
+}
+.fo-pc-status.off {
+  color: #94a3b8;
+}
+.fo-pc-stand {
+  width: 18px;
+  height: 10px;
+  margin: 0 auto;
+  background: #64748b;
+}
+.fo-pc-base {
+  width: 56px;
+  height: 6px;
+  margin: 0 auto;
+  border-radius: 3px;
+  background: #475569;
+}

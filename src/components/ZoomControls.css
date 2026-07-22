@@ -1,0 +1,120 @@
+.zoom-controls-wrap {
+  margin: 0 !important;
+  padding: 0;
+  bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  left: max(12px, env(safe-area-inset-left)) !important;
+}
+
+.zoom-controls-stack {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.zoom-controls-btns {
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px var(--fo-shadow);
+}
+
+.zoom-controls-btns .zoom-btn {
+  width: 34px;
+  height: 34px;
+  border: none !important;
+  border-bottom: 1px solid var(--fo-border) !important;
+  border-radius: 0 !important;
+  background: var(--fo-surface) !important;
+  color: var(--fo-text-secondary);
+  display: grid;
+  place-items: center;
+}
+
+.zoom-controls-btns .zoom-btn:last-child {
+  border-bottom: none !important;
+}
+
+.zoom-controls-btns .zoom-btn:hover:not(:disabled) {
+  background: var(--fo-surface-2) !important;
+  color: var(--fo-accent);
+}
+
+.zoom-controls-btns .zoom-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Override RF: fill:currentColor membuat Lucide jadi solid hitam */
+.zoom-controls-btns .zoom-btn svg {
+  fill: none !important;
+  stroke: currentColor;
+  width: 14px !important;
+  max-width: 14px !important;
+  max-height: 14px !important;
+}
+
+/* Tanpa box putih — hanya label + bar */
+.zoom-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  width: 148px;
+  padding-bottom: 4px;
+  background: transparent;
+}
+
+.zoom-label {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--fo-text);
+  text-align: center;
+}
+
+.zoom-bar {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--fo-muted);
+}
+
+.zoom-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #dc2626;
+  transition: width 0.12s ease;
+}
+
+.zoom-bar-thumb {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--fo-surface);
+  border: 2px solid #dc2626;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.35);
+  transform: translate(-50%, -50%);
+  transition: left 0.12s ease;
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .zoom-controls-stack {
+    gap: 8px;
+  }
+
+  .zoom-indicator {
+    width: 72px;
+  }
+
+  .zoom-controls-btns .zoom-btn {
+    width: 40px;
+    height: 40px;
+  }
+}
+

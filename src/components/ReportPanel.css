@@ -1,0 +1,280 @@
+.report-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: var(--fo-overlay);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.report-panel {
+  width: min(920px, 100%);
+  max-height: min(90vh, 900px);
+  overflow: auto;
+  background: var(--fo-surface);
+  color: var(--fo-text);
+  border-radius: 12px;
+  border: 1px solid var(--fo-border-strong);
+  box-shadow: 0 20px 50px var(--fo-shadow);
+  padding: 18px 20px 20px;
+}
+
+.report-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.report-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.report-meta {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--fo-muted);
+}
+
+.report-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.report-actions .btn-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.report-actions .btn-ghost {
+  border: 1px solid var(--fo-border-strong);
+  background: var(--fo-surface-2);
+  color: var(--fo-text-secondary);
+}
+
+.report-actions .btn-ghost:hover {
+  border-color: var(--fo-muted);
+  color: var(--fo-text);
+  background: var(--fo-surface);
+}
+
+.report-actions .btn-close {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid color-mix(in srgb, var(--fo-danger) 35%, transparent);
+  background: var(--fo-danger-soft);
+  color: var(--fo-danger);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.report-actions .btn-close:hover {
+  background: var(--fo-danger);
+  border-color: var(--fo-danger);
+  color: #fff;
+}
+
+.report-actions .btn-excel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: #15803d;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+.report-actions .btn-excel:hover:not(:disabled) {
+  background: #16a34a;
+}
+
+.report-actions .btn-excel:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.report-empty {
+  margin: 24px 0;
+  text-align: center;
+  color: var(--fo-muted);
+}
+
+.report-table-wrap {
+  overflow: auto;
+  border: 1px solid var(--fo-border);
+  border-radius: 8px;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.report-table th,
+.report-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--fo-border);
+  text-align: left;
+}
+
+.report-table th {
+  background: var(--fo-surface-2);
+  font-weight: 700;
+  color: var(--fo-text-secondary);
+  white-space: nowrap;
+}
+
+.report-table td.num,
+.report-table th:nth-child(n + 4) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-table-qty th:nth-child(4),
+.report-table-qty td:nth-child(4) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-table-onu-loss th:nth-child(5),
+.report-table-onu-loss td:nth-child(5) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.report-comment {
+  max-width: 280px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--fo-text-secondary);
+}
+
+.report-table tbody tr:hover {
+  background: var(--fo-surface-2);
+}
+
+.report-table tfoot td {
+  font-weight: 700;
+  background: var(--fo-accent-soft);
+  border-bottom: none;
+}
+
+@media (max-width: 900px) {
+  .report-overlay {
+    padding: 0;
+    align-items: stretch;
+    place-items: stretch;
+  }
+
+  .report-panel {
+    width: 100%;
+    max-height: none;
+    height: 100%;
+    border-radius: 0;
+    border: none;
+    padding-top: max(14px, env(safe-area-inset-top));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  .report-head {
+    flex-wrap: wrap;
+  }
+
+  .report-table {
+    font-size: 12px;
+  }
+
+  .report-table th,
+  .report-table td {
+    padding: 8px 10px;
+  }
+}
+
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  html,
+  body,
+  #root,
+  .app-shell {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  /* Jangan sembunyikan .app-shell — laporan ada di dalamnya */
+  .app-shell > *:not(.report-overlay) {
+    display: none !important;
+  }
+
+  .report-overlay {
+    position: static !important;
+    inset: auto !important;
+    display: block !important;
+    background: none !important;
+    padding: 0 !important;
+    place-items: unset !important;
+    z-index: auto !important;
+  }
+
+  .report-panel {
+    display: block !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    max-height: none !important;
+    width: 100% !important;
+    overflow: visible !important;
+    background: #fff !important;
+    color: #000 !important;
+    padding: 0 !important;
+  }
+
+  .report-actions {
+    display: none !important;
+  }
+
+  .report-table-wrap {
+    overflow: visible !important;
+    border-color: #ccc !important;
+  }
+
+  .report-table th,
+  .report-table td {
+    color: #000 !important;
+    border-bottom-color: #ccc !important;
+  }
+
+  .report-table th,
+  .report-table tfoot td {
+    background: #f3f4f6 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .report-meta,
+  .report-comment {
+    color: #444 !important;
+  }
+}
