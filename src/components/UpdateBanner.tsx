@@ -1,6 +1,9 @@
 import { Download, ExternalLink, RefreshCw, X } from 'lucide-react'
 import { useI18n } from '../i18n/context'
-import type { LatestReleaseInfo } from '../utils/githubUpdate'
+import {
+  formatReleaseNotesPreview,
+  type LatestReleaseInfo,
+} from '../utils/githubUpdate'
 import type { UpdateStatus } from '../hooks/useAppUpdate'
 import './UpdateBanner.css'
 
@@ -20,15 +23,12 @@ export function UpdateBanner({
   onDismiss,
 }: Props) {
   const { t, tf } = useI18n()
-  const notePreview = latest.notes
-    ? latest.notes.split('\n').find((line) => line.trim())?.trim() ?? ''
-    : ''
+  const notePreview = formatReleaseNotesPreview(latest.notes)
 
   return (
     <div className="update-banner" role="status">
       <div className="update-banner-text">
         <strong>{tf('updateAvailable', { version: latest.version })}</strong>
-        <span className="update-banner-note">{t('updateUiHint')}</span>
         {notePreview ? <span className="update-banner-note">{notePreview}</span> : null}
         {error ? <span className="update-banner-error">{error}</span> : null}
         {applying ? <span className="update-banner-note">{t('updateApplying')}</span> : null}

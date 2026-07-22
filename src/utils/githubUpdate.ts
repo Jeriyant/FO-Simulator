@@ -19,6 +19,7 @@ export type ApplyUpdateResult = {
   tag?: string
   skipped?: boolean
   error?: string
+  detail?: string
 }
 
 type GhAsset = {
@@ -62,6 +63,44 @@ export function findDistAsset(assets: GhAsset[] | undefined): string | null {
   return zip?.browser_download_url ?? null
 }
 
+/** Ambil ringkasan isi release notes (lewati heading markdown seperti "## What's new"). */
+export function formatReleaseNotesPreview(notes: string, maxItems = 3): string {
+  const cleaned = notes.replace(/^\uFEFF/, '').trim()
+  if (!cleaned) return ''
+
+  const lines = cleaned
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+  const whatsNewIdx = lines.findIndex((line) =>
+    /^#+\s*what'?s\s+new\b/i.test(line),
+  )
+  const start = whatsNewIdx >= 0 ? whatsNewIdx + 1 : 0
+
+  const items: string[] = []
+  for (let i = start; i < lines.length; i++) {
+    const line = lines[i]!
+    if (/^#+\s/.test(line)) break
+    const text = line.replace(/^[-*+]\s+/, '').replace(/^\d+\.\s+/, '').trim()
+    if (!text) continue
+    items.push(text)
+    if (items.length >= maxItems) break
+  }
+
+  if (!items.length) {
+    for (const line of lines) {
+      if (/^#+\s/.test(line)) continue
+      const text = line.replace(/^[-*+]\s+/, '').replace(/^\d+\.\s+/, '').trim()
+      if (!text) continue
+      items.push(text)
+      if (items.length >= maxItems) break
+    }
+  }
+
+  return items.join(' · ')
+}
+
 export async function fetchLatestRelease(
   signal?: AbortSignal,
 ): Promise<LatestReleaseInfo> {
@@ -81,7 +120,7 @@ export async function fetchLatestRelease(
   return {
     tag,
     version: normalizeVersion(tag),
-    notes: (data.body ?? '').trim(),
+    notes: (data.body ?? '').replace(/^\uFEFF/, '').trim(),
     htmlUrl: data.html_url?.trim() || `${GITHUB_REPO_URL}/releases`,
     downloadUrl: findDistAsset(data.assets),
   }
@@ -117,9 +156,18 @@ export async function applyServerUpdate(
   }
 
   if (!res.ok || !data.ok) {
+    const detail = typeof data.detail === 'string' ? data.detail.trim() : ''
+    const detailHint =
+      detail && !data.error?.includes(detail.slice(0, 40))
+        ? detail.split('\n').filter(Boolean).slice(-2).join(' | ')
+        : ''
     return {
       ok: false,
-      error: data.error || `Update gagal (HTTP ${res.status})`,
+      error:
+        data.error ||
+        `Update gagal (HTTP ${res.status})` +
+          (detailHint ? `: ${detailHint}` : ''),
+      detail: data.detail,
     }
   }
 

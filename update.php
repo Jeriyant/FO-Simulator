@@ -9,6 +9,11 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 header('Access-Control-Allow-Origin: *');
 
+// Unduh zip GitHub bisa >30s (default max_execution_time)
+@set_time_limit(0);
+@ini_set('max_execution_time', '0');
+ignore_user_abort(true);
+
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type');
@@ -58,10 +63,20 @@ if (is_file($versionFile)) {
 }
 
 if ($exitCode !== 0) {
+    $error = 'update.sh gagal (exit ' . $exitCode . ')';
+    if (preg_match('/^ERROR:\s*(.+)$/m', $text, $m)) {
+        $error = trim($m[1]);
+    } elseif ($text !== '') {
+        $lines = array_values(array_filter(array_map('trim', explode("\n", $text)), 'strlen'));
+        if ($lines) {
+            $error .= ': ' . $lines[count($lines) - 1];
+        }
+    }
+
     http_response_code(500);
     echo json_encode([
         'ok' => false,
-        'error' => 'update.sh gagal (exit ' . $exitCode . ')',
+        'error' => $error,
         'detail' => $text,
     ], JSON_UNESCAPED_UNICODE);
     exit;

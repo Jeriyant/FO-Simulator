@@ -6,7 +6,7 @@
 #   ./update.sh --force
 #   ./update.sh --check
 #
-# UI (paling mudah di production):
+# UI:
 #   POST update.php  → menjalankan update.sh
 set -euo pipefail
 
@@ -15,10 +15,13 @@ APP_DIR="$(pwd)"
 
 VERSION_FILE="./version.json"
 ZIP_FILE="./fo-simulator-dist.zip"
+LOCK_FILE="./.update.lock"
+EXTRACT_TMP="./.update-extract-tmp"
 GITHUB_OWNER="${FO_GITHUB_OWNER:-Jeriyant}"
 GITHUB_REPO="${FO_GITHUB_REPO:-FO-Simulator}"
 DIST_ASSET_NAME="${FO_DIST_ASSET:-fo-simulator-dist.zip}"
 API_URL="https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest"
+USER_AGENT="FO-Simulator-Updater/${HOSTNAME:-server}"
 
 IS_CGI=false
 # Hanya mode CGI Apache sejati (bukan saat dipanggil dari update.php / CLI)
@@ -38,7 +41,7 @@ for arg in "$@"; do
   ./update.sh           # update folder ini dari GitHub
   ./update.sh --force
   ./update.sh --check
-  UI: POST /api/update (Apache ScriptAlias → update.sh)
+  UI: POST update.php
 EOF
       exit 0
       ;;
@@ -96,38 +99,83 @@ log() { echo "$@" >&2; }
 
 have_cmd() { command -v "$1" >/dev/null 2>&1; }
 
+# Cegah dua update bersamaan (klik berulang / request paralel)
+exec 9>"$LOCK_FILE"
+if have_cmd flock; then
+  if ! flock -n 9; then
+    fail "update sedang berjalan — tunggu selesai lalu coba lagi"
+  fi
+fi
+
 log "==> App dir: $APP_DIR"
 
 have_cmd curl || have_cmd wget || fail "butuh curl atau wget"
 
 download() {
   local url="$1" out="$2"
-  if have_cmd curl; then
-    curl -fsSL --retry 3 --retry-delay 1 -o "$out" "$url"
-  else
-    wget -q -O "$out" "$url"
-  fi
+  local attempt=1 max=5
+  local delay=2
+  while (( attempt <= max )); do
+    log "    unduh (percobaan $attempt/$max)..."
+    rm -f "$out"
+    if have_cmd curl; then
+      if curl -fsSL \
+        --connect-timeout 20 \
+        --max-time 300 \
+        --retry 3 \
+        --retry-delay 2 \
+        -A "$USER_AGENT" \
+        -H "Accept: application/vnd.github+json" \
+        -H "X-GitHub-Api-Version: 2022-11-28" \
+        -o "$out" "$url" \
+        && [[ -s "$out" ]]
+      then
+        return 0
+      fi
+    elif wget -q --tries=3 --timeout=30 -U "$USER_AGENT" -O "$out" "$url" && [[ -s "$out" ]]; then
+      return 0
+    fi
+    rm -f "$out"
+    if (( attempt == max )); then
+      return 1
+    fi
+    sleep "$delay"
+    delay=$((delay * 2))
+    attempt=$((attempt + 1))
+  done
+  return 1
 }
 
-log "==> Cek release GitHub..."
 META_TMP="$(mktemp)"
 cleanup() {
   rm -f "$META_TMP" "$ZIP_FILE" 2>/dev/null || true
-  rm -rf ./.update-extract-tmp 2>/dev/null || true
+  rm -rf "$EXTRACT_TMP" 2>/dev/null || true
 }
 trap cleanup EXIT
 
-download "$API_URL" "$META_TMP" || fail "gagal unduh metadata GitHub"
+log "==> Cek release GitHub..."
+download "$API_URL" "$META_TMP" || fail "gagal unduh metadata GitHub (jaringan/rate-limit?)"
+
+# Deteksi respons error GitHub (rate limit / HTML)
+if grep -qiE '"message"[[:space:]]*:[[:space:]]*"(API rate limit|Not Found|Bad credentials)' "$META_TMP" 2>/dev/null; then
+  msg="$(grep -oE '"message"[[:space:]]*:[[:space:]]*"[^"]+"' "$META_TMP" | head -1 | sed -E 's/.*"([^"]+)"[[:space:]]*$/\1/')"
+  fail "GitHub API: ${msg:-error}"
+fi
+
+TAG=""
+REMOTE_VERSION=""
+DOWNLOAD_URL=""
 
 if have_cmd python3; then
-  mapfile -t RELEASE_INFO < <(
+  PARSE_OUT="$(
     python3 - "$META_TMP" "$DIST_ASSET_NAME" <<'PY'
 import json, sys
 with open(sys.argv[1], encoding="utf-8") as f:
     data = json.load(f)
 tag = (data.get("tag_name") or "").strip()
 if not tag:
-    raise SystemExit("tag kosong")
+    sys.stderr.write("tag kosong\n")
+    sys.exit(2)
 url = ""
 for a in data.get("assets") or []:
     if a.get("name") == sys.argv[2]:
@@ -139,22 +187,25 @@ if not url:
             url = a.get("browser_download_url") or ""
             break
 if not url:
-    raise SystemExit("zip asset tidak ada")
+    sys.stderr.write("zip asset tidak ada\n")
+    sys.exit(2)
 print(tag)
 print(tag.lstrip("vV"))
 print(url)
 PY
-  ) || fail "gagal parse release (python)"
+  )" || fail "gagal parse release (python) — cek metadata GitHub"
+  # Baca 3 baris hasil parse (hindari mapfile + process substitution yang menelan exit code)
+  TAG="$(printf '%s\n' "$PARSE_OUT" | sed -n '1p')"
+  REMOTE_VERSION="$(printf '%s\n' "$PARSE_OUT" | sed -n '2p')"
+  DOWNLOAD_URL="$(printf '%s\n' "$PARSE_OUT" | sed -n '3p')"
 else
   TAG="$(grep -oE '"tag_name"[[:space:]]*:[[:space:]]*"[^"]+"' "$META_TMP" | head -1 | sed -E 's/.*"([^"]+)"[[:space:]]*$/\1/')"
   DOWNLOAD_URL="$(grep -oE "\"browser_download_url\"[[:space:]]*:[[:space:]]*\"[^\"]+${DIST_ASSET_NAME}\"" "$META_TMP" | head -1 | sed -E 's/.*"([^"]+)"[[:space:]]*$/\1/')"
-  [[ -n "$TAG" && -n "$DOWNLOAD_URL" ]] || fail "gagal parse release (install python3)"
-  RELEASE_INFO=("$TAG" "${TAG#v}" "$DOWNLOAD_URL")
+  REMOTE_VERSION="${TAG#v}"
 fi
 
-TAG="${RELEASE_INFO[0]}"
-REMOTE_VERSION="${RELEASE_INFO[1]}"
-DOWNLOAD_URL="${RELEASE_INFO[2]}"
+[[ -n "$TAG" && -n "$REMOTE_VERSION" && -n "$DOWNLOAD_URL" ]] \
+  || fail "gagal parse release (tag/url kosong — install python3 jika perlu)"
 
 log "==> Remote: $TAG"
 
@@ -166,7 +217,7 @@ if [[ -f "$VERSION_FILE" ]]; then
       | head -1 \
       | sed -E 's/.*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/' \
       | tr -d '[:space:]'
-  )"
+  )" || true
 fi
 log "==> Local:  ${LOCAL_VERSION:-none}  ($VERSION_FILE)"
 
@@ -218,20 +269,25 @@ fi
 
 log "==> Download → $ZIP_FILE"
 rm -f "$ZIP_FILE"
-download "$DOWNLOAD_URL" "$ZIP_FILE" || fail "download gagal"
+download "$DOWNLOAD_URL" "$ZIP_FILE" || fail "download zip gagal (jaringan/CDN GitHub)"
 [[ -s "$ZIP_FILE" ]] || fail "zip kosong"
 
 log "==> Extract..."
-EXTRACT_TMP="./.update-extract-tmp"
 rm -rf "$EXTRACT_TMP"
 mkdir -p "$EXTRACT_TMP"
 
 if have_cmd unzip; then
+  unzip -tqq "$ZIP_FILE" >/dev/null 2>&1 || fail "zip rusak/tidak lengkap (coba lagi)"
   unzip -o -q "$ZIP_FILE" -d "$EXTRACT_TMP" || fail "unzip gagal"
 elif have_cmd python3; then
   python3 <<PY || fail "extract gagal"
-import zipfile
-zipfile.ZipFile("$ZIP_FILE").extractall("$EXTRACT_TMP")
+import zipfile, sys
+z = zipfile.ZipFile("$ZIP_FILE")
+bad = z.testzip()
+if bad is not None:
+    sys.stderr.write(f"zip rusak: {bad}\\n")
+    sys.exit(1)
+z.extractall("$EXTRACT_TMP")
 PY
 else
   fail "butuh unzip atau python3"
@@ -252,21 +308,23 @@ shopt -s nullglob dotglob
 for item in ./*; do
   base="$(basename "$item")"
   case "$base" in
-    update.sh|.update-extract-tmp|fo-simulator-dist.zip|update.php) continue ;;
+    update.sh|update.php|.update-extract-tmp|.update.lock|fo-simulator-dist.zip) continue ;;
     .|..) continue ;;
   esac
-  rm -rf "$item"
+  rm -rf "$item" || fail "gagal hapus $base (izin/file terkunci?)"
 done
 shopt -u nullglob dotglob
 
-cp -r "$EXTRACT_TMP"/. ./
+cp -a "$EXTRACT_TMP"/. ./ || fail "gagal menyalin file update"
 rm -rf "$EXTRACT_TMP"
 rm -f "$ZIP_FILE"
 
 printf '{\n  "version": "%s"\n}\n' "$REMOTE_VERSION" > "$VERSION_FILE"
 
 [[ -f ./index.html ]] || fail "install gagal: ./index.html tidak ada"
-[[ -f ./update.sh ]] || fail "update.sh hilang"
+[[ -f ./update.sh ]] || fail "update.sh hilang setelah install"
+chmod +x ./update.sh 2>/dev/null || true
+[[ -f ./update.php ]] && chmod 644 ./update.php 2>/dev/null || true
 
 if have_cmd systemctl; then
   systemctl reload apache2 >/dev/null 2>&1 || systemctl reload httpd >/dev/null 2>&1 || true

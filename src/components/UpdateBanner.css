@@ -34,10 +34,12 @@
 .update-banner-note {
   font-size: 12px;
   color: var(--fo-muted);
-  white-space: nowrap;
+  white-space: normal;
   overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 520px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  max-width: 640px;
 }
 
 .update-banner-cmd {
