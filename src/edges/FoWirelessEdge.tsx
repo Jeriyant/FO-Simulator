@@ -3,8 +3,8 @@ import type { FoEdgeData, FoNodeData } from '../types/fo'
 
 /**
  * Koneksi WiFi visual: gelombang ) ) ) antara ONU ↔ Smartphone.
- * Semakin jauh jaraknya → semakin banyak & padat gelombangnya.
- * Animasi lebih hidup jika smartphone sudah dapat DHCP Mikrotik.
+ * Semakin jauh → semakin padat.
+ * Animasi hanya jika smartphone sudah dapat IP (DHCP); tanpa IP → statis.
  */
 export function FoWirelessEdge({
   id,
@@ -17,7 +17,10 @@ export function FoWirelessEdge({
   const nodes = useNodes()
   const targetNode = nodes.find((n) => n.id === target)
   const td = targetNode?.data as FoNodeData | undefined
-  const dhcpOk = td?.type === 'smartphone' && Boolean(td.online)
+  const hasIp =
+    td?.type === 'smartphone' &&
+    Boolean(td.online) &&
+    Boolean(String(td.ipAddress ?? '').trim())
 
   const mx = (sourceX + targetX) / 2
   const my = (sourceY + targetY) / 2
@@ -29,7 +32,6 @@ export function FoWirelessEdge({
   const px = -uy
   const py = ux
 
-  // Jarak jauh → spacing mengecil + jumlah busur naik (gelombang lebih padat)
   const spacing = Math.max(5, 17 - len * 0.03)
   const usable = len * 0.8
   const count = Math.max(6, Math.min(30, Math.round(usable / spacing)))
@@ -53,7 +55,9 @@ export function FoWirelessEdge({
     return {
       d: `M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}`,
       delay: (i / count) * 0.55,
-      opacity: 0.3 + (i / Math.max(count - 1, 1)) * 0.5,
+      opacity: hasIp
+        ? 0.35 + (i / Math.max(count - 1, 1)) * 0.5
+        : 0.4 + (i / Math.max(count - 1, 1)) * 0.25,
     }
   })
 
@@ -62,7 +66,7 @@ export function FoWirelessEdge({
 
   return (
     <g
-      className={`fo-wireless-waves ${dhcpOk ? 'is-dhcp' : 'is-wifi-only'}`}
+      className={`fo-wireless-waves ${hasIp ? 'is-dhcp' : 'is-wifi-only'}`}
       data-id={id}
     >
       {arcs.map((arc, i) => (
@@ -70,12 +74,12 @@ export function FoWirelessEdge({
           key={i}
           d={arc.d}
           fill="none"
-          stroke={dhcpOk ? '#0284c7' : '#a78bfa'}
-          strokeWidth={dhcpOk ? 2.4 : 2}
+          stroke={hasIp ? '#0284c7' : '#a78bfa'}
+          strokeWidth={hasIp ? 2.4 : 2}
           strokeLinecap="round"
           opacity={arc.opacity}
-          className={`fo-wifi-arc ${dhcpOk ? 'dhcp' : 'static'}`}
-          style={dhcpOk ? { animationDelay: `${arc.delay}s` } : undefined}
+          className={`fo-wifi-arc ${hasIp ? 'dhcp' : 'static'}`}
+          style={hasIp ? { animationDelay: `${arc.delay}s` } : undefined}
         />
       ))}
       <text
@@ -84,7 +88,7 @@ export function FoWirelessEdge({
         textAnchor="middle"
         dominantBaseline="middle"
         className="fo-wifi-label"
-        fill={dhcpOk ? '#0369a1' : '#7c3aed'}
+        fill={hasIp ? '#0369a1' : '#7c3aed'}
         fontSize={9}
         fontWeight={700}
         fontFamily="IBM Plex Sans, sans-serif"
