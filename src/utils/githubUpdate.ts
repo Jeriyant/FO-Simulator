@@ -2,6 +2,7 @@ import {
   DIST_ASSET_NAME,
   GITHUB_RELEASES_API,
   GITHUB_REPO_URL,
+  getUpdateApiUrl,
 } from '../config/github'
 
 export type LatestReleaseInfo = {
@@ -10,6 +11,14 @@ export type LatestReleaseInfo = {
   notes: string
   htmlUrl: string
   downloadUrl: string | null
+}
+
+export type ApplyUpdateResult = {
+  ok: boolean
+  version?: string
+  tag?: string
+  skipped?: boolean
+  error?: string
 }
 
 type GhAsset = {
@@ -24,15 +33,10 @@ type GhRelease = {
   assets?: GhAsset[]
 }
 
-/** Strip leading `v` and trim. */
 export function normalizeVersion(raw: string): string {
   return raw.trim().replace(/^v/i, '')
 }
 
-/**
- * Compare two semver-ish versions (major.minor.patch).
- * Returns >0 if a > b, <0 if a < b, 0 if equal.
- */
 export function compareSemver(a: string, b: string): number {
   const pa = normalizeVersion(a)
     .split(/[.+-]/)
@@ -83,5 +87,48 @@ export async function fetchLatestRelease(
   }
 }
 
-/** Command shown in UI for production update (script lives next to dist/). */
 export const UPDATE_SCRIPT_COMMAND = './update.sh'
+
+/** Jalankan update.sh lewat update.php (PHP). */
+export async function applyServerUpdate(
+  signal?: AbortSignal,
+): Promise<ApplyUpdateResult> {
+  let res: Response
+  try {
+    res = await fetch(getUpdateApiUrl(), {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      signal,
+    })
+  } catch {
+    return {
+      ok: false,
+      error:
+        'update.php tidak terjangkau. Pastikan PHP aktif dan file update.php ada sejajar index.html.',
+    }
+  }
+
+  let data: ApplyUpdateResult = { ok: false }
+  try {
+    data = (await res.json()) as ApplyUpdateResult
+  } catch {
+    return {
+      ok: false,
+      error: `Respons bukan JSON (HTTP ${res.status}). Cek apakah PHP berjalan untuk update.php.`,
+    }
+  }
+
+  if (!res.ok || !data.ok) {
+    return {
+      ok: false,
+      error: data.error || `Update gagal (HTTP ${res.status})`,
+    }
+  }
+
+  return {
+    ok: true,
+    version: data.version,
+    tag: data.tag,
+    skipped: data.skipped,
+  }
+}

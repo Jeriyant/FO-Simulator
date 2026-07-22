@@ -9,7 +9,7 @@ const { version } = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf-
   version: string
 }
 
-/** Emit version.json + copy update.sh into dist (same folder as index.html). */
+/** Emit version.json + update.sh + update.php into dist (same folder as index.html). */
 function emitReleaseFiles(appVersion: string): Plugin {
   return {
     name: 'emit-release-files',
@@ -22,11 +22,12 @@ function emitReleaseFiles(appVersion: string): Plugin {
         `${JSON.stringify({ version: appVersion }, null, 2)}\n`,
         'utf-8',
       )
-      const src = join(rootDir, 'update.sh')
-      const dest = join(dir, 'update.sh')
-      // keep LF endings for Linux servers
-      const script = readFileSync(src, 'utf-8').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
-      writeFileSync(dest, script, 'utf-8')
+      for (const name of ['update.sh', 'update.php'] as const) {
+        const src = join(rootDir, name)
+        const dest = join(dir, name)
+        const text = readFileSync(src, 'utf-8').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+        writeFileSync(dest, text, 'utf-8')
+      }
     },
   }
 }

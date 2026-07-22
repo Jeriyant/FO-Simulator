@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { APP_VERSION } from '../version'
 import {
+  applyServerUpdate,
   compareSemver,
   fetchLatestRelease,
   type LatestReleaseInfo,
@@ -8,15 +9,21 @@ import {
 
 const DISMISS_KEY = 'fo-update-dismissed'
 
-export type UpdateStatus = 'idle' | 'checking' | 'available' | 'upToDate' | 'error'
+export type UpdateStatus =
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'upToDate'
+  | 'error'
+  | 'applying'
 
 export type AppUpdateState = {
   status: UpdateStatus
   latest: LatestReleaseInfo | null
   error: string | null
-  /** True when a newer version exists and user has not dismissed this tag. */
   showBanner: boolean
   checkNow: () => Promise<void>
+  applyUpdate: () => Promise<void>
   dismiss: () => void
   copyUpdateCommand: () => Promise<boolean>
 }
@@ -64,6 +71,23 @@ export function useAppUpdate(): AppUpdateState {
     }
   }, [])
 
+  const applyUpdate = useCallback(async () => {
+    setStatus('applying')
+    setError(null)
+    const result = await applyServerUpdate()
+    if (!result.ok) {
+      setError(result.error || 'Update failed')
+      setStatus('available')
+      return
+    }
+    try {
+      localStorage.removeItem(DISMISS_KEY)
+    } catch {
+      /* ignore */
+    }
+    window.location.reload()
+  }, [])
+
   const dismiss = useCallback(() => {
     if (!latest) return
     writeDismissedTag(latest.tag)
@@ -87,7 +111,7 @@ export function useAppUpdate(): AppUpdateState {
   }, [checkNow])
 
   const showBanner =
-    status === 'available' &&
+    (status === 'available' || status === 'applying') &&
     latest != null &&
     compareSemver(latest.version, APP_VERSION) > 0 &&
     dismissedTag !== latest.tag
@@ -98,6 +122,7 @@ export function useAppUpdate(): AppUpdateState {
     error,
     showBanner,
     checkNow,
+    applyUpdate,
     dismiss,
     copyUpdateCommand,
   }

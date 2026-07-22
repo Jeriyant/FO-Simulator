@@ -1,4 +1,4 @@
-import { Copy, ExternalLink, RefreshCw, Terminal, X } from 'lucide-react'
+import { Copy, Download, ExternalLink, RefreshCw, X } from 'lucide-react'
 import { useState } from 'react'
 import { useI18n } from '../i18n/context'
 import { UPDATE_SCRIPT_COMMAND, type LatestReleaseInfo } from '../utils/githubUpdate'
@@ -7,11 +7,21 @@ import './UpdateBanner.css'
 
 type Props = {
   latest: LatestReleaseInfo
+  applying?: boolean
+  error?: string | null
+  onApply: () => void
   onCopyCommand: () => Promise<boolean>
   onDismiss: () => void
 }
 
-export function UpdateBanner({ latest, onCopyCommand, onDismiss }: Props) {
+export function UpdateBanner({
+  latest,
+  applying = false,
+  error = null,
+  onApply,
+  onCopyCommand,
+  onDismiss,
+}: Props) {
   const { t, tf } = useI18n()
   const [copied, setCopied] = useState(false)
   const notePreview = latest.notes
@@ -28,13 +38,29 @@ export function UpdateBanner({ latest, onCopyCommand, onDismiss }: Props) {
     <div className="update-banner" role="status">
       <div className="update-banner-text">
         <strong>{tf('updateAvailable', { version: latest.version })}</strong>
-        <span className="update-banner-note">{t('updateScriptHint')}</span>
-        <code className="update-banner-cmd">{UPDATE_SCRIPT_COMMAND}</code>
+        <span className="update-banner-note">{t('updateUiHint')}</span>
         {notePreview ? <span className="update-banner-note">{notePreview}</span> : null}
+        {error ? <span className="update-banner-error">{error}</span> : null}
+        {applying ? <span className="update-banner-note">{t('updateApplying')}</span> : null}
       </div>
       <div className="update-banner-actions">
-        <button type="button" className="update-banner-btn primary" onClick={() => void handleCopy()}>
-          {copied ? <Terminal size={14} strokeWidth={2.4} /> : <Copy size={14} strokeWidth={2.4} />}
+        <button
+          type="button"
+          className="update-banner-btn primary"
+          onClick={onApply}
+          disabled={applying}
+        >
+          <Download size={14} strokeWidth={2.4} />
+          {applying ? t('updateApplying') : t('updateInstall')}
+        </button>
+        <button
+          type="button"
+          className="update-banner-btn ghost"
+          onClick={() => void handleCopy()}
+          disabled={applying}
+          title={UPDATE_SCRIPT_COMMAND}
+        >
+          <Copy size={14} strokeWidth={2.4} />
           {copied ? t('updateCommandCopied') : t('updateCopyCommand')}
         </button>
         <a
@@ -46,13 +72,19 @@ export function UpdateBanner({ latest, onCopyCommand, onDismiss }: Props) {
           <ExternalLink size={14} strokeWidth={2.4} />
           {t('updateViewRelease')}
         </a>
-        <button type="button" className="update-banner-btn ghost" onClick={onDismiss}>
+        <button
+          type="button"
+          className="update-banner-btn ghost"
+          onClick={onDismiss}
+          disabled={applying}
+        >
           {t('updateLater')}
         </button>
         <button
           type="button"
           className="update-banner-close"
           onClick={onDismiss}
+          disabled={applying}
           aria-label={t('close')}
         >
           <X size={14} />
@@ -68,6 +100,7 @@ type SettingsProps = {
   latest: LatestReleaseInfo | null
   error: string | null
   onCheck: () => void
+  onApply: () => void
   onCopyCommand: () => Promise<boolean>
 }
 
@@ -77,6 +110,7 @@ export function UpdateSettingsSection({
   latest,
   error,
   onCheck,
+  onApply,
   onCopyCommand,
 }: SettingsProps) {
   const { t, tf } = useI18n()
@@ -84,6 +118,7 @@ export function UpdateSettingsSection({
 
   let statusText = t('updateIdle')
   if (status === 'checking') statusText = t('updateChecking')
+  else if (status === 'applying') statusText = t('updateApplying')
   else if (status === 'upToDate') statusText = t('updateUpToDate')
   else if (status === 'available' && latest)
     statusText = tf('updateAvailable', { version: latest.version })
@@ -102,27 +137,40 @@ export function UpdateSettingsSection({
         {tf('updateCurrentVersion', { version: currentVersion })}
       </p>
       <div className="settings-static">{statusText}</div>
-      {status === 'available' && latest && !latest.downloadUrl ? (
-        <div className="settings-static">{t('updateNoAsset')}</div>
+      {error && status !== 'error' ? (
+        <div className="settings-static update-banner-error">{error}</div>
       ) : null}
       <p className="settings-hint">{t('updateBackendHint')}</p>
-      <code className="update-banner-cmd">{UPDATE_SCRIPT_COMMAND}</code>
       <div className="update-settings-actions">
         <button
           type="button"
           className="btn-ghost"
           onClick={() => void onCheck()}
-          disabled={status === 'checking'}
+          disabled={status === 'checking' || status === 'applying'}
         >
           <RefreshCw size={14} strokeWidth={2.4} />
           {t('updateCheckNow')}
         </button>
-        {status === 'available' ? (
-          <button type="button" className="btn-save" onClick={() => void handleCopy()}>
-            <Copy size={14} strokeWidth={2.4} />
-            {copied ? t('updateCommandCopied') : t('updateCopyCommand')}
+        {status === 'available' || status === 'applying' ? (
+          <button
+            type="button"
+            className="btn-save"
+            onClick={() => void onApply()}
+            disabled={status === 'applying'}
+          >
+            <Download size={14} strokeWidth={2.4} />
+            {status === 'applying' ? t('updateApplying') : t('updateInstall')}
           </button>
         ) : null}
+        <button
+          type="button"
+          className="btn-ghost"
+          onClick={() => void handleCopy()}
+          disabled={status === 'applying'}
+        >
+          <Copy size={14} strokeWidth={2.4} />
+          {copied ? t('updateCommandCopied') : t('updateCopyCommand')}
+        </button>
       </div>
     </section>
   )

@@ -1,17 +1,13 @@
 #!/usr/bin/env bash
 # FO Simulator production updater
 #
-# Satu paket dengan index.html:
-#   /var/www/html/FO-Simulator/
-#     index.html
-#     assets/
-#     version.json
-#     update.sh
-#     ...
-#
-#   cd /var/www/html/FO-Simulator && ./update.sh
+# CLI:
+#   ./update.sh
 #   ./update.sh --force
 #   ./update.sh --check
+#
+# UI (paling mudah di production):
+#   POST update.php  → menjalankan update.sh
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -24,6 +20,12 @@ GITHUB_REPO="${FO_GITHUB_REPO:-FO-Simulator}"
 DIST_ASSET_NAME="${FO_DIST_ASSET:-fo-simulator-dist.zip}"
 API_URL="https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest"
 
+IS_CGI=false
+# Hanya mode CGI Apache sejati (bukan saat dipanggil dari update.php / CLI)
+if [[ -n "${REQUEST_METHOD:-}" && -n "${GATEWAY_INTERFACE:-}" ]]; then
+  IS_CGI=true
+fi
+
 FORCE=false
 CHECK_ONLY=false
 for arg in "$@"; do
@@ -31,22 +33,70 @@ for arg in "$@"; do
     --force|-f) FORCE=true ;;
     --check) CHECK_ONLY=true ;;
     -h|--help)
+      [[ "$IS_CGI" == true ]] && exit 0
       cat <<'EOF'
-  cd /var/www/html/FO-Simulator
-  ./update.sh           # unduh zip → timpa file di folder ini (./)
-  ./update.sh --force   # paksa timpa meski versi sama
-  ./update.sh --check   # cek saja
+  ./update.sh           # update folder ini dari GitHub
+  ./update.sh --force
+  ./update.sh --check
+  UI: POST /api/update (Apache ScriptAlias → update.sh)
 EOF
       exit 0
       ;;
   esac
 done
 
-fail() { echo "ERROR: $*" >&2; exit 1; }
+# Dari UI selalu paksa pasang (user sudah lihat ada versi baru)
+if [[ "$IS_CGI" == true ]]; then
+  FORCE=true
+  case "${REQUEST_METHOD}" in
+    OPTIONS)
+      printf 'Status: 204 No Content\r\n'
+      printf 'Access-Control-Allow-Origin: *\r\n'
+      printf 'Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n'
+      printf 'Access-Control-Allow-Headers: Content-Type\r\n\r\n'
+      exit 0
+      ;;
+    GET|POST) ;;
+    *)
+      printf 'Status: 405 Method Not Allowed\r\nContent-Type: application/json\r\n\r\n'
+      printf '{"ok":false,"error":"Method not allowed"}\n'
+      exit 0
+      ;;
+  esac
+fi
+
+json_escape() {
+  local s=${1//\\/\\\\}
+  s=${s//\"/\\\"}
+  s=${s//$'\n'/\\n}
+  s=${s//$'\r'/}
+  printf '%s' "$s"
+}
+
+cgi_json() {
+  local status="$1" ok="$2" body="$3"
+  printf 'Status: %s\r\n' "$status"
+  printf 'Content-Type: application/json; charset=utf-8\r\n'
+  printf 'Cache-Control: no-store\r\n'
+  printf 'Access-Control-Allow-Origin: *\r\n\r\n'
+  printf '{"ok":%s,%s}\n' "$ok" "$body"
+}
+
+fail() {
+  local msg="$1"
+  if [[ "$IS_CGI" == true ]]; then
+    cgi_json "500 Internal Server Error" "false" "\"error\":\"$(json_escape "$msg")\""
+    exit 0
+  fi
+  echo "ERROR: $msg" >&2
+  exit 1
+}
+
+log() { echo "$@" >&2; }
+
 have_cmd() { command -v "$1" >/dev/null 2>&1; }
 
-echo "==> App dir: $APP_DIR"
-echo "==> Install: ./  (sejajar update.sh, bukan ./dist)"
+log "==> App dir: $APP_DIR"
 
 have_cmd curl || have_cmd wget || fail "butuh curl atau wget"
 
@@ -59,8 +109,7 @@ download() {
   fi
 }
 
-# --- metadata GitHub ---
-echo "==> Cek release GitHub..."
+log "==> Cek release GitHub..."
 META_TMP="$(mktemp)"
 cleanup() {
   rm -f "$META_TMP" "$ZIP_FILE" 2>/dev/null || true
@@ -107,16 +156,10 @@ TAG="${RELEASE_INFO[0]}"
 REMOTE_VERSION="${RELEASE_INFO[1]}"
 DOWNLOAD_URL="${RELEASE_INFO[2]}"
 
-echo "==> Remote : $TAG  (parsed=$REMOTE_VERSION)"
-echo "==> Zip    : $DOWNLOAD_URL"
+log "==> Remote: $TAG"
 
-# --- LOCAL dari ./version.json ---
 LOCAL_VERSION=""
-echo "==> Local file: $APP_DIR/version.json"
 if [[ -f "$VERSION_FILE" ]]; then
-  echo "==> Local raw :"
-  cat "$VERSION_FILE"
-  echo
   LOCAL_VERSION="$(
     tr -d '\r' < "$VERSION_FILE" \
       | grep -oE '"version"[[:space:]]*:[[:space:]]*"[^"]+"' \
@@ -124,15 +167,8 @@ if [[ -f "$VERSION_FILE" ]]; then
       | sed -E 's/.*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/' \
       | tr -d '[:space:]'
   )"
-else
-  echo "==> Local raw : (file tidak ada)"
 fi
-
-if [[ -n "$LOCAL_VERSION" ]]; then
-  echo "==> Local parsed: $LOCAL_VERSION"
-else
-  echo "==> Local parsed: (kosong → akan di-update)"
-fi
+log "==> Local:  ${LOCAL_VERSION:-none}  ($VERSION_FILE)"
 
 version_gt() {
   local a="${1#v}" b="${2#v}"
@@ -156,36 +192,36 @@ version_gt() {
 NEED_UPDATE=false
 if [[ "$FORCE" == true ]]; then
   NEED_UPDATE=true
-  echo "==> Mode --force"
 elif version_gt "$REMOTE_VERSION" "$LOCAL_VERSION"; then
   NEED_UPDATE=true
-  echo "==> Ada update: $LOCAL_VERSION → $REMOTE_VERSION"
-else
-  echo "==> Tidak ada update (local=$LOCAL_VERSION remote=$REMOTE_VERSION)"
 fi
 
 if [[ "$CHECK_ONLY" == true ]]; then
   if [[ "$NEED_UPDATE" == true ]]; then
-    echo "Update tersedia: v$REMOTE_VERSION"
+    [[ "$IS_CGI" == true ]] && cgi_json "200 OK" "true" "\"update\":true,\"version\":\"$(json_escape "$REMOTE_VERSION")\"" && exit 0
+    log "Update tersedia: v$REMOTE_VERSION"
     exit 0
   fi
-  echo "Sudah versi terbaru."
+  [[ "$IS_CGI" == true ]] && cgi_json "200 OK" "true" "\"update\":false,\"version\":\"$(json_escape "$REMOTE_VERSION")\"" && exit 0
+  log "Sudah versi terbaru."
   exit 1
 fi
 
 if [[ "$NEED_UPDATE" != true ]]; then
-  echo "    Lewati. Pakai ./update.sh --force untuk paksa timpa."
+  if [[ "$IS_CGI" == true ]]; then
+    cgi_json "200 OK" "true" "\"version\":\"$(json_escape "$LOCAL_VERSION")\",\"skipped\":true"
+    exit 0
+  fi
+  log "Tidak ada update. Pakai ./update.sh --force untuk paksa."
   exit 0
 fi
 
-# --- download ---
-echo "==> Download → $ZIP_FILE"
+log "==> Download → $ZIP_FILE"
 rm -f "$ZIP_FILE"
 download "$DOWNLOAD_URL" "$ZIP_FILE" || fail "download gagal"
 [[ -s "$ZIP_FILE" ]] || fail "zip kosong"
 
-# --- extract ke folder sementara ---
-echo "==> Extract zip..."
+log "==> Extract..."
 EXTRACT_TMP="./.update-extract-tmp"
 rm -rf "$EXTRACT_TMP"
 mkdir -p "$EXTRACT_TMP"
@@ -211,34 +247,36 @@ fi
 
 [[ -f "$EXTRACT_TMP/index.html" ]] || fail "zip tanpa index.html"
 
-# --- hapus file lama di ./ kecuali update.sh ---
-echo "==> Timpa file di $APP_DIR (update.sh tetap aman)"
+log "==> Timpa file di $APP_DIR"
 shopt -s nullglob dotglob
 for item in ./*; do
   base="$(basename "$item")"
   case "$base" in
-    update.sh|.update-extract-tmp|fo-simulator-dist.zip) continue ;;
+    update.sh|.update-extract-tmp|fo-simulator-dist.zip|update.php) continue ;;
     .|..) continue ;;
   esac
   rm -rf "$item"
 done
 shopt -u nullglob dotglob
 
-# --- salin hasil extract ke ./ ---
 cp -r "$EXTRACT_TMP"/. ./
 rm -rf "$EXTRACT_TMP"
 rm -f "$ZIP_FILE"
 
-# pastikan version.json sesuai remote
 printf '{\n  "version": "%s"\n}\n' "$REMOTE_VERSION" > "$VERSION_FILE"
 
 [[ -f ./index.html ]] || fail "install gagal: ./index.html tidak ada"
-[[ -f ./update.sh ]] || fail "update.sh hilang (tidak seharusnya)"
+[[ -f ./update.sh ]] || fail "update.sh hilang"
 
 if have_cmd systemctl; then
   systemctl reload apache2 >/dev/null 2>&1 || systemctl reload httpd >/dev/null 2>&1 || true
 fi
 
-echo "==> Selesai → v$REMOTE_VERSION"
-echo "    Cek: cat ./version.json"
-echo "    Hard-refresh browser (Ctrl+F5)."
+log "==> Selesai → v$REMOTE_VERSION"
+
+if [[ "$IS_CGI" == true ]]; then
+  cgi_json "200 OK" "true" "\"version\":\"$(json_escape "$REMOTE_VERSION")\",\"tag\":\"$(json_escape "$TAG")\""
+  exit 0
+fi
+
+log "    Hard-refresh browser (Ctrl+F5)."

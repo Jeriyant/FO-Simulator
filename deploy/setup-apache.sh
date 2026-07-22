@@ -8,8 +8,9 @@ echo "==> Build production assets"
 cd "$ROOT"
 npm run build
 
-echo "==> Make update.sh executable"
+echo "==> Make update scripts executable"
 chmod +x "$ROOT/update.sh" "$ROOT/deploy/update-from-github.sh" "$ROOT/deploy/setup-apache.sh"
+chmod +x "$ROOT/dist/update.sh" 2>/dev/null || true
 
 echo "==> Install Apache site config"
 sudo a2enmod headers 2>/dev/null || true
@@ -20,5 +21,6 @@ sudo apache2ctl configtest
 sudo systemctl reload apache2
 
 echo "==> Done. Open http://localhost/ in your browser."
-echo "    Production layout: DocumentRoot = folder berisi index.html + update.sh"
-echo "    Update later:  cd /var/www/html/FO-Simulator && ./update.sh"
+echo "    UI update: POST ./update.php  (PHP menjalankan update.sh)"
+echo "    Manual:    ./update.sh"
+echo "    Tip:       lihat deploy/php-update.example.md"

@@ -1776,6 +1776,11 @@ function SimulatorCanvas({
         {appUpdate.showBanner && appUpdate.latest ? (
           <UpdateBanner
             latest={appUpdate.latest}
+            applying={appUpdate.status === 'applying'}
+            error={appUpdate.error}
+            onApply={() => {
+              void appUpdate.applyUpdate()
+            }}
             onCopyCommand={appUpdate.copyUpdateCommand}
             onDismiss={appUpdate.dismiss}
           />

@@ -259,6 +259,9 @@ export function SettingsPanel({
           onCheck={() => {
             void update.checkNow()
           }}
+          onApply={() => {
+            void update.applyUpdate()
+          }}
           onCopyCommand={update.copyUpdateCommand}
         />
       ) : null}
