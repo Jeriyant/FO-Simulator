@@ -148,7 +148,7 @@
 .palette-item {
   display: flex;
   gap: 10px;
-  align-items: center;
+  align-items: flex-start;
   padding: 10px 12px;
   border-radius: 10px;
   background: color-mix(in srgb, var(--accent) 14%, #ffffff);
@@ -175,24 +175,9 @@
 }
 
 .palette-icon {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
+  color: var(--accent);
+  margin-top: 2px;
   flex-shrink: 0;
-  margin-top: 0;
-  border-radius: 8px;
-  color: #fff;
-  background: var(--accent);
-  border: none;
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--accent) 35%, transparent);
-}
-
-.palette-icon svg {
-  display: block;
-  width: 16px;
-  height: 16px;
-  stroke: currentColor;
 }
 
 .palette-text {
@@ -224,12 +209,6 @@
 [data-theme='dark'] .palette-item:hover {
   background: color-mix(in srgb, var(--accent) 32%, #1c1917);
   border-color: color-mix(in srgb, var(--accent) 55%, #44403c);
-}
-
-[data-theme='dark'] .palette-icon {
-  color: #fff;
-  background: var(--accent);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
 .sidebar-backdrop {
@@ -301,7 +280,7 @@
   height: auto;
   min-height: 48px;
   padding: 8px 10px;
-  align-items: center;
+  align-items: flex-start;
   justify-content: flex-start;
   gap: 10px;
 }
@@ -311,14 +290,7 @@
 }
 
 .sidebar--drawer .palette-icon {
-  width: 28px;
-  height: 28px;
-  margin-top: 0;
-}
-
-.sidebar--drawer .palette-icon svg {
-  width: 14px;
-  height: 14px;
+  margin-top: 2px;
 }
 
 .sidebar--drawer .palette-text {

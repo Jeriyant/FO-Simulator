@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import {
-  Boxes,
+  Box,
   Cable,
   CircleDot,
   Cloud,
@@ -19,7 +19,7 @@ import type { ComponentType } from '../data/components'
 const HEADER_ICONS: Record<ComponentType, ReactNode> = {
   olt: <Radio size={13} strokeWidth={2.4} />,
   splitterRatio: <GitFork size={13} strokeWidth={2.4} />,
-  splitterBox: <Boxes size={13} strokeWidth={2.4} />,
+  splitterBox: <Box size={13} strokeWidth={2.4} />,
   patchcord: <Cable size={13} strokeWidth={2.4} />,
   connector: <Link2 size={13} strokeWidth={2.4} />,
   barrel: <CircleDot size={13} strokeWidth={2.4} />,
