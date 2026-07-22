@@ -328,16 +328,11 @@ export const translations = {
     updateDownload: 'Unduh update',
     updateInstall: 'Pasang update',
     updateApplying: 'Memasang update…',
-    updateCopyCommand: 'Salin perintah',
-    updateCommandCopied: 'Tersalin',
-    updateScriptHint: 'Di server, jalankan di folder aplikasi (tempat index.html & version.json):',
     updateUiHint: 'Klik Pasang update untuk menjalankan update.php di server.',
     updateLater: 'Nanti',
     updateViewRelease: 'Lihat release',
     updateNoAsset: 'File dist.zip belum ada di release. Buka halaman release di GitHub.',
     updateCheckFailed: 'Gagal memeriksa update dari GitHub.',
-    updateBackendHint:
-      'Tombol Pasang update memanggil update.php (PHP menjalankan update.sh). Cadangan CLI: ./update.sh',
   },
   en: {
     untitledProject: 'Untitled Project',
@@ -666,16 +661,11 @@ export const translations = {
     updateDownload: 'Download update',
     updateInstall: 'Install update',
     updateApplying: 'Installing update…',
-    updateCopyCommand: 'Copy command',
-    updateCommandCopied: 'Copied',
-    updateScriptHint: 'On the server, run it in the app folder (where index.html & version.json live):',
     updateUiHint: 'Click Install update to run update.php on the server.',
     updateLater: 'Later',
     updateViewRelease: 'View release',
     updateNoAsset: 'dist.zip is not attached to the release yet. Open the GitHub release page.',
     updateCheckFailed: 'Failed to check for updates on GitHub.',
-    updateBackendHint:
-      'Install update calls update.php (PHP runs update.sh). CLI fallback: ./update.sh',
   },
 } as const
 

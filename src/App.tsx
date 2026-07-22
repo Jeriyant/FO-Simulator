@@ -1781,7 +1781,6 @@ function SimulatorCanvas({
             onApply={() => {
               void appUpdate.applyUpdate()
             }}
-            onCopyCommand={appUpdate.copyUpdateCommand}
             onDismiss={appUpdate.dismiss}
           />
         ) : null}

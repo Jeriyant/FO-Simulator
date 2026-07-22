@@ -1,7 +1,6 @@
-import { Copy, Download, ExternalLink, RefreshCw, X } from 'lucide-react'
-import { useState } from 'react'
+import { Download, ExternalLink, RefreshCw, X } from 'lucide-react'
 import { useI18n } from '../i18n/context'
-import { UPDATE_SCRIPT_COMMAND, type LatestReleaseInfo } from '../utils/githubUpdate'
+import type { LatestReleaseInfo } from '../utils/githubUpdate'
 import type { UpdateStatus } from '../hooks/useAppUpdate'
 import './UpdateBanner.css'
 
@@ -10,7 +9,6 @@ type Props = {
   applying?: boolean
   error?: string | null
   onApply: () => void
-  onCopyCommand: () => Promise<boolean>
   onDismiss: () => void
 }
 
@@ -19,20 +17,12 @@ export function UpdateBanner({
   applying = false,
   error = null,
   onApply,
-  onCopyCommand,
   onDismiss,
 }: Props) {
   const { t, tf } = useI18n()
-  const [copied, setCopied] = useState(false)
   const notePreview = latest.notes
     ? latest.notes.split('\n').find((line) => line.trim())?.trim() ?? ''
     : ''
-
-  const handleCopy = async () => {
-    const ok = await onCopyCommand()
-    setCopied(ok)
-    if (ok) window.setTimeout(() => setCopied(false), 2000)
-  }
 
   return (
     <div className="update-banner" role="status">
@@ -52,16 +42,6 @@ export function UpdateBanner({
         >
           <Download size={14} strokeWidth={2.4} />
           {applying ? t('updateApplying') : t('updateInstall')}
-        </button>
-        <button
-          type="button"
-          className="update-banner-btn ghost"
-          onClick={() => void handleCopy()}
-          disabled={applying}
-          title={UPDATE_SCRIPT_COMMAND}
-        >
-          <Copy size={14} strokeWidth={2.4} />
-          {copied ? t('updateCommandCopied') : t('updateCopyCommand')}
         </button>
         <a
           className="update-banner-btn ghost"
@@ -101,7 +81,6 @@ type SettingsProps = {
   error: string | null
   onCheck: () => void
   onApply: () => void
-  onCopyCommand: () => Promise<boolean>
 }
 
 export function UpdateSettingsSection({
@@ -111,10 +90,8 @@ export function UpdateSettingsSection({
   error,
   onCheck,
   onApply,
-  onCopyCommand,
 }: SettingsProps) {
   const { t, tf } = useI18n()
-  const [copied, setCopied] = useState(false)
 
   let statusText = t('updateIdle')
   if (status === 'checking') statusText = t('updateChecking')
@@ -123,12 +100,6 @@ export function UpdateSettingsSection({
   else if (status === 'available' && latest)
     statusText = tf('updateAvailable', { version: latest.version })
   else if (status === 'error') statusText = error || t('updateCheckFailed')
-
-  const handleCopy = async () => {
-    const ok = await onCopyCommand()
-    setCopied(ok)
-    if (ok) window.setTimeout(() => setCopied(false), 2000)
-  }
 
   return (
     <section className="settings-section">
@@ -140,7 +111,6 @@ export function UpdateSettingsSection({
       {error && status !== 'error' ? (
         <div className="settings-static update-banner-error">{error}</div>
       ) : null}
-      <p className="settings-hint">{t('updateBackendHint')}</p>
       <div className="update-settings-actions">
         <button
           type="button"
@@ -162,15 +132,6 @@ export function UpdateSettingsSection({
             {status === 'applying' ? t('updateApplying') : t('updateInstall')}
           </button>
         ) : null}
-        <button
-          type="button"
-          className="btn-ghost"
-          onClick={() => void handleCopy()}
-          disabled={status === 'applying'}
-        >
-          <Copy size={14} strokeWidth={2.4} />
-          {copied ? t('updateCommandCopied') : t('updateCopyCommand')}
-        </button>
       </div>
     </section>
   )

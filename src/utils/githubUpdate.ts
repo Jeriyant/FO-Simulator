@@ -87,8 +87,6 @@ export async function fetchLatestRelease(
   }
 }
 
-export const UPDATE_SCRIPT_COMMAND = './update.sh'
-
 /** Jalankan update.sh lewat update.php (PHP). */
 export async function applyServerUpdate(
   signal?: AbortSignal,
