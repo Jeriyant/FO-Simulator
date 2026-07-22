@@ -171,17 +171,14 @@ export async function printMapAsImage(options: {
       font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
     }
     .head {
-      margin: 0 0 10px;
+      margin: 0 0 14px;
+      text-align: center;
     }
     .head h1 {
       margin: 0;
-      font-size: 16px;
+      font-size: 20px;
       font-weight: 700;
-    }
-    .head p {
-      margin: 4px 0 0;
-      font-size: 11px;
-      color: #6b7280;
+      letter-spacing: -0.01em;
     }
     img {
       display: block;
@@ -194,7 +191,6 @@ export async function printMapAsImage(options: {
 <body>
   <div class="head">
     <h1>${escapeHtml(title)}</h1>
-    <p>${escapeHtml(t(locale, 'printTopologyMeta'))}</p>
   </div>
   <img src="${dataUrl}" alt="${escapeHtml(title)}" />
 </body>

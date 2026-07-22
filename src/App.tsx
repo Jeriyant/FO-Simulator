@@ -1774,7 +1774,11 @@ function SimulatorCanvas({
         />
 
         {appUpdate.showBanner && appUpdate.latest ? (
-          <UpdateBanner latest={appUpdate.latest} onDismiss={appUpdate.dismiss} />
+          <UpdateBanner
+            latest={appUpdate.latest}
+            onCopyCommand={appUpdate.copyUpdateCommand}
+            onDismiss={appUpdate.dismiss}
+          />
         ) : null}
 
         <div

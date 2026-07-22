@@ -40,6 +40,19 @@
   max-width: 520px;
 }
 
+.update-banner-cmd {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fo-text);
+  background: var(--fo-surface-2, #f5f5f4);
+  border: 1px solid var(--fo-border, #e5e7eb);
+}
+
 .update-banner-actions {
   display: flex;
   flex-wrap: wrap;
@@ -67,8 +80,11 @@
   border-color: var(--fo-accent, #0f766e);
 }
 
-.update-banner-btn.primary:hover {
-  filter: brightness(1.05);
+.update-banner-btn.primary:disabled,
+.update-banner-close:disabled,
+.update-banner-btn.ghost:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .update-banner-btn.ghost {

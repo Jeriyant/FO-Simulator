@@ -1,0 +1,20 @@
+---
+description: Always rebuild dist after app code changes
+alwaysApply: true
+---
+
+# Always build `dist/`
+
+After any implementation that changes the app (UI, logic, i18n, config, version), run a production build before finishing so `dist/` stays current:
+
+```bash
+npm run build
+```
+
+On Windows, if `npm` is not on PATH, use WSL:
+
+```bash
+wsl -e bash -lc 'cd /mnt/e/Cursor-Project/FO-Simulator && npm run build'
+```
+
+Do this without waiting for the user to ask, unless the request was plan/review only with no code changes.

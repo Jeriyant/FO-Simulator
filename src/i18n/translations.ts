@@ -326,10 +326,17 @@ export const translations = {
     updateIdle: 'Belum diperiksa.',
     updateCheckNow: 'Cek update',
     updateDownload: 'Unduh update',
+    updateInstall: 'Pasang update',
+    updateApplying: 'Memasang update…',
+    updateCopyCommand: 'Salin perintah',
+    updateCommandCopied: 'Tersalin',
+    updateScriptHint: 'Di server, jalankan script di folder aplikasi (sejajar dist):',
     updateLater: 'Nanti',
     updateViewRelease: 'Lihat release',
     updateNoAsset: 'File dist.zip belum ada di release. Buka halaman release di GitHub.',
     updateCheckFailed: 'Gagal memeriksa update dari GitHub.',
+    updateBackendHint:
+      'Update production: jalankan ./update.sh di folder aplikasi (satu level dengan dist). Script akan unduh zip dari GitHub dan menimpa dist/.',
   },
   en: {
     untitledProject: 'Untitled Project',
@@ -656,10 +663,17 @@ export const translations = {
     updateIdle: 'Not checked yet.',
     updateCheckNow: 'Check for updates',
     updateDownload: 'Download update',
+    updateInstall: 'Install update',
+    updateApplying: 'Installing update…',
+    updateCopyCommand: 'Copy command',
+    updateCommandCopied: 'Copied',
+    updateScriptHint: 'On the server, run the script in the app folder (next to dist):',
     updateLater: 'Later',
     updateViewRelease: 'View release',
     updateNoAsset: 'dist.zip is not attached to the release yet. Open the GitHub release page.',
     updateCheckFailed: 'Failed to check for updates on GitHub.',
+    updateBackendHint:
+      'Production update: run ./update.sh in the app folder (sibling of dist). It downloads the zip from GitHub and overwrites dist/.',
   },
 } as const
 

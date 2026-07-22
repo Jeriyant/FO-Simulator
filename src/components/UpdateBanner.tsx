@@ -1,34 +1,41 @@
-import { Download, ExternalLink, RefreshCw, X } from 'lucide-react'
+import { Copy, ExternalLink, RefreshCw, Terminal, X } from 'lucide-react'
+import { useState } from 'react'
 import { useI18n } from '../i18n/context'
-import { startUpdateDownload, type LatestReleaseInfo } from '../utils/githubUpdate'
+import { UPDATE_SCRIPT_COMMAND, type LatestReleaseInfo } from '../utils/githubUpdate'
+import type { UpdateStatus } from '../hooks/useAppUpdate'
 import './UpdateBanner.css'
 
 type Props = {
   latest: LatestReleaseInfo
+  onCopyCommand: () => Promise<boolean>
   onDismiss: () => void
 }
 
-export function UpdateBanner({ latest, onDismiss }: Props) {
+export function UpdateBanner({ latest, onCopyCommand, onDismiss }: Props) {
   const { t, tf } = useI18n()
+  const [copied, setCopied] = useState(false)
   const notePreview = latest.notes
     ? latest.notes.split('\n').find((line) => line.trim())?.trim() ?? ''
     : ''
+
+  const handleCopy = async () => {
+    const ok = await onCopyCommand()
+    setCopied(ok)
+    if (ok) window.setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <div className="update-banner" role="status">
       <div className="update-banner-text">
         <strong>{tf('updateAvailable', { version: latest.version })}</strong>
+        <span className="update-banner-note">{t('updateScriptHint')}</span>
+        <code className="update-banner-cmd">{UPDATE_SCRIPT_COMMAND}</code>
         {notePreview ? <span className="update-banner-note">{notePreview}</span> : null}
       </div>
       <div className="update-banner-actions">
-        <button
-          type="button"
-          className="update-banner-btn primary"
-          onClick={() => startUpdateDownload(latest)}
-          title={latest.downloadUrl ? t('updateDownload') : t('updateNoAsset')}
-        >
-          <Download size={14} strokeWidth={2.4} />
-          {t('updateDownload')}
+        <button type="button" className="update-banner-btn primary" onClick={() => void handleCopy()}>
+          {copied ? <Terminal size={14} strokeWidth={2.4} /> : <Copy size={14} strokeWidth={2.4} />}
+          {copied ? t('updateCommandCopied') : t('updateCopyCommand')}
         </button>
         <a
           className="update-banner-btn ghost"
@@ -57,10 +64,11 @@ export function UpdateBanner({ latest, onDismiss }: Props) {
 
 type SettingsProps = {
   currentVersion: string
-  status: 'idle' | 'checking' | 'available' | 'upToDate' | 'error'
+  status: UpdateStatus
   latest: LatestReleaseInfo | null
   error: string | null
   onCheck: () => void
+  onCopyCommand: () => Promise<boolean>
 }
 
 export function UpdateSettingsSection({
@@ -69,8 +77,10 @@ export function UpdateSettingsSection({
   latest,
   error,
   onCheck,
+  onCopyCommand,
 }: SettingsProps) {
   const { t, tf } = useI18n()
+  const [copied, setCopied] = useState(false)
 
   let statusText = t('updateIdle')
   if (status === 'checking') statusText = t('updateChecking')
@@ -78,6 +88,12 @@ export function UpdateSettingsSection({
   else if (status === 'available' && latest)
     statusText = tf('updateAvailable', { version: latest.version })
   else if (status === 'error') statusText = error || t('updateCheckFailed')
+
+  const handleCopy = async () => {
+    const ok = await onCopyCommand()
+    setCopied(ok)
+    if (ok) window.setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <section className="settings-section">
@@ -89,6 +105,8 @@ export function UpdateSettingsSection({
       {status === 'available' && latest && !latest.downloadUrl ? (
         <div className="settings-static">{t('updateNoAsset')}</div>
       ) : null}
+      <p className="settings-hint">{t('updateBackendHint')}</p>
+      <code className="update-banner-cmd">{UPDATE_SCRIPT_COMMAND}</code>
       <div className="update-settings-actions">
         <button
           type="button"
@@ -99,14 +117,10 @@ export function UpdateSettingsSection({
           <RefreshCw size={14} strokeWidth={2.4} />
           {t('updateCheckNow')}
         </button>
-        {status === 'available' && latest ? (
-          <button
-            type="button"
-            className="btn-save"
-            onClick={() => startUpdateDownload(latest)}
-          >
-            <Download size={14} strokeWidth={2.4} />
-            {t('updateDownload')}
+        {status === 'available' ? (
+          <button type="button" className="btn-save" onClick={() => void handleCopy()}>
+            <Copy size={14} strokeWidth={2.4} />
+            {copied ? t('updateCommandCopied') : t('updateCopyCommand')}
           </button>
         ) : null}
       </div>

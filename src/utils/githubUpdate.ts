@@ -30,7 +30,7 @@ export function normalizeVersion(raw: string): string {
 }
 
 /**
- * Compare two semver-ish versions (major.minor.patch[+prerelease ignored for parts].
+ * Compare two semver-ish versions (major.minor.patch).
  * Returns >0 if a > b, <0 if a < b, 0 if equal.
  */
 export function compareSemver(a: string, b: string): number {
@@ -83,11 +83,5 @@ export async function fetchLatestRelease(
   }
 }
 
-/** Start download of dist zip, or open release page if asset missing. */
-export function startUpdateDownload(latest: LatestReleaseInfo): void {
-  if (latest.downloadUrl) {
-    window.location.assign(latest.downloadUrl)
-    return
-  }
-  window.open(latest.htmlUrl, '_blank', 'noopener,noreferrer')
-}
+/** Command shown in UI for production update (script lives next to dist/). */
+export const UPDATE_SCRIPT_COMMAND = './update.sh'

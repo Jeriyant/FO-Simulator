@@ -195,7 +195,7 @@ export function ProjectToolbar({
               <button type="button" role="menuitem" onClick={() => runFileAction(onPrintTopology)}>
                 <Printer size={15} />
                 <span>
-                  {t('printTopology')}
+                  {t('print')}
                   <small>Ctrl+P</small>
                 </span>
               </button>

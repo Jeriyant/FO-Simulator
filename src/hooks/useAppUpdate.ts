@@ -18,6 +18,7 @@ export type AppUpdateState = {
   showBanner: boolean
   checkNow: () => Promise<void>
   dismiss: () => void
+  copyUpdateCommand: () => Promise<boolean>
 }
 
 function readDismissedTag(): string | null {
@@ -69,6 +70,15 @@ export function useAppUpdate(): AppUpdateState {
     setDismissedTag(latest.tag)
   }, [latest])
 
+  const copyUpdateCommand = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText('./update.sh')
+      return true
+    } catch {
+      return false
+    }
+  }, [])
+
   useEffect(() => {
     void checkNow()
     return () => {
@@ -89,5 +99,6 @@ export function useAppUpdate(): AppUpdateState {
     showBanner,
     checkNow,
     dismiss,
+    copyUpdateCommand,
   }
 }
