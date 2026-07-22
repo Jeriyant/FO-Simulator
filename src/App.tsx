@@ -61,7 +61,7 @@ import { foEdgeTypes, edgeTypeFromStyle, connectionLineTypeFromStyle, setActiveE
 import { useProjectHistory } from './hooks/useProjectHistory'
 import { analyzeNetwork, createDefaultData } from './utils/calculateLoss'
 import { analyzeLanNetwork } from './utils/lanNetwork'
-import { exportMapAsImage, type MapImageFormat } from './utils/exportMapImage'
+import { exportMapAsImage, printMapAsImage, type MapImageFormat } from './utils/exportMapImage'
 import {
   buildMaterialReport,
   buildOnuLossReport,
@@ -436,6 +436,22 @@ function SimulatorCanvas({
     },
     [nodes, projectTitle, t, locale],
   )
+
+  const printTopology = useCallback(async () => {
+    try {
+      await printMapAsImage({
+        nodes,
+        projectTitle,
+        locale,
+      })
+    } catch (err) {
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : t('printTopologyFail')
+      window.alert(message)
+    }
+  }, [nodes, projectTitle, t, locale])
 
   const openProjectFile = useCallback(async () => {
     if (supportsFileSystemAccess()) {
@@ -1440,6 +1456,11 @@ function SimulatorCanvas({
         newProject()
         return
       }
+      if (e.key.toLowerCase() === 'p') {
+        e.preventDefault()
+        void printTopology()
+        return
+      }
       if (e.key.toLowerCase() === 'c') {
         if (copySelectionToClipboard()) e.preventDefault()
         return
@@ -1470,6 +1491,7 @@ function SimulatorCanvas({
     saveProject,
     openProjectFile,
     newProject,
+    printTopology,
     undo,
     redo,
     copySelectionToClipboard,
@@ -1684,6 +1706,7 @@ function SimulatorCanvas({
         onSaveAs={saveProjectAs}
         onExportPng={() => void exportMap('png')}
         onExportJpg={() => void exportMap('jpg')}
+        onPrintTopology={() => void printTopology()}
         onUndo={undo}
         onRedo={redo}
         onOpenMaterialReport={() => {

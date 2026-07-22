@@ -1,7 +1,7 @@
 import { FileSpreadsheet, Printer, X } from 'lucide-react'
 import { useI18n } from '../i18n/context'
 import type { FoReport } from '../utils/materialReport'
-import { formatLossDb, formatPowerDbm, formatRupiah } from '../utils/materialReport'
+import { formatPowerDbm, formatRupiah } from '../utils/materialReport'
 import { exportReportToExcel } from '../utils/exportReportExcel'
 import { printFoReport } from '../utils/printReport'
 import './ReportPanel.css'
@@ -141,9 +141,8 @@ export function ReportPanel({ report, onClose }: Props) {
                   <th>{t('reportColNo')}</th>
                   <th>{t('label')}</th>
                   <th>{t('reportColComponent')}</th>
-                  <th>{t('reportColStatus')}</th>
                   <th>{t('reportColRx')}</th>
-                  <th>{t('reportColLoss')}</th>
+                  <th>{t('reportColStatus')}</th>
                   <th>{t('reportColComment')}</th>
                 </tr>
               </thead>
@@ -153,9 +152,8 @@ export function ReportPanel({ report, onClose }: Props) {
                     <td>{row.no}</td>
                     <td>{row.label}</td>
                     <td>{row.component}</td>
-                    <td>{row.status}</td>
                     <td className="num">{formatPowerDbm(row.receivedPower)}</td>
-                    <td className="num">{formatLossDb(row.loss)}</td>
+                    <td>{row.status}</td>
                     <td className="report-comment">{row.comment}</td>
                   </tr>
                 ))}

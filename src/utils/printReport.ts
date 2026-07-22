@@ -1,6 +1,6 @@
 import { t, type Locale } from '../i18n/translations'
 import type { FoReport } from './materialReport'
-import { formatLossDb, formatPowerDbm, formatRupiah } from './materialReport'
+import { formatPowerDbm, formatRupiah } from './materialReport'
 
 function escapeHtml(value: string): string {
   return value
@@ -91,9 +91,8 @@ function buildReportTableHtml(report: FoReport, locale: Locale): string {
         <td>${r.no}</td>
         <td>${escapeHtml(r.label)}</td>
         <td>${escapeHtml(r.component)}</td>
-        <td>${escapeHtml(r.status)}</td>
         <td class="num">${escapeHtml(formatPowerDbm(r.receivedPower))}</td>
-        <td class="num">${escapeHtml(formatLossDb(r.loss))}</td>
+        <td>${escapeHtml(r.status)}</td>
         <td class="report-comment">${escapeHtml(r.comment)}</td>
       </tr>`,
     )
@@ -105,9 +104,8 @@ function buildReportTableHtml(report: FoReport, locale: Locale): string {
           <th>${escapeHtml(t(locale, 'reportColNo'))}</th>
           <th>${escapeHtml(t(locale, 'label'))}</th>
           <th>${escapeHtml(t(locale, 'reportColComponent'))}</th>
-          <th>${escapeHtml(t(locale, 'reportColStatus'))}</th>
           <th>${escapeHtml(t(locale, 'reportColRx'))}</th>
-          <th>${escapeHtml(t(locale, 'reportColLoss'))}</th>
+          <th>${escapeHtml(t(locale, 'reportColStatus'))}</th>
           <th>${escapeHtml(t(locale, 'reportColComment'))}</th>
         </tr>
       </thead>
@@ -183,13 +181,16 @@ const PRINT_CSS = `
     text-align: right;
     font-variant-numeric: tabular-nums;
   }
-  .report-table-onu-loss th:nth-child(5),
-  .report-table-onu-loss td:nth-child(5),
-  .report-table-onu-loss th:nth-child(6),
-  .report-table-onu-loss td:nth-child(6) {
+  .report-table-onu-loss th:nth-child(4),
+  .report-table-onu-loss td:nth-child(4) {
     text-align: right;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+  }
+  .report-table-onu-loss th:nth-child(n + 5),
+  .report-table-onu-loss td:nth-child(n + 5) {
+    text-align: left;
+    font-variant-numeric: normal;
   }
   .report-comment {
     max-width: 280px;

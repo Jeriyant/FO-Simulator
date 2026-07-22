@@ -7,7 +7,6 @@ import {
 } from '../utils/githubUpdate'
 
 const DISMISS_KEY = 'fo-update-dismissed'
-const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000
 
 export type UpdateStatus = 'idle' | 'checking' | 'available' | 'upToDate' | 'error'
 
@@ -72,11 +71,7 @@ export function useAppUpdate(): AppUpdateState {
 
   useEffect(() => {
     void checkNow()
-    const id = window.setInterval(() => {
-      void checkNow()
-    }, CHECK_INTERVAL_MS)
     return () => {
-      window.clearInterval(id)
       abortRef.current?.abort()
     }
   }, [checkNow])

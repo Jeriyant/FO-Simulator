@@ -62,17 +62,12 @@ function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([bytes], { type: mime })
 }
 
-/**
- * Export seluruh peta (semua node) ke PNG atau JPG.
- */
-export async function exportMapAsImage(options: {
+async function captureMapDataUrl(options: {
   nodes: Node[]
-  projectTitle: string
   format: MapImageFormat
-  locale?: Locale
-}): Promise<void> {
-  const { nodes, projectTitle, format } = options
-  const locale = options.locale ?? readStoredLocale()
+  locale: Locale
+}): Promise<string> {
+  const { nodes, format, locale } = options
   if (nodes.length === 0) {
     throw new Error(t(locale, 'exportEmpty'))
   }
@@ -103,7 +98,7 @@ export async function exportMapAsImage(options: {
   )
 
   const exportFn = format === 'png' ? toPng : toJpeg
-  const dataUrl = await exportFn(viewportEl, {
+  return exportFn(viewportEl, {
     backgroundColor: BG,
     width: imageWidth,
     height: imageHeight,
@@ -115,6 +110,20 @@ export async function exportMapAsImage(options: {
       transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
     },
   })
+}
+
+/**
+ * Export seluruh peta (semua node) ke PNG atau JPG.
+ */
+export async function exportMapAsImage(options: {
+  nodes: Node[]
+  projectTitle: string
+  format: MapImageFormat
+  locale?: Locale
+}): Promise<void> {
+  const { nodes, projectTitle, format } = options
+  const locale = options.locale ?? readStoredLocale()
+  const dataUrl = await captureMapDataUrl({ nodes, format, locale })
 
   const base = slugifyFilename(projectTitle.trim() || 'peta-fo')
   const ext = format === 'png' ? 'png' : 'jpg'
@@ -123,4 +132,111 @@ export async function exportMapAsImage(options: {
   const blob = dataUrlToBlob(dataUrl)
   const saved = await saveBlobWithPicker(blob, filename, format)
   if (!saved) downloadDataUrl(dataUrl, filename)
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+/**
+ * Cetak gambar topologi (semua node) lewat dialog print browser.
+ */
+export async function printMapAsImage(options: {
+  nodes: Node[]
+  projectTitle: string
+  locale?: Locale
+}): Promise<void> {
+  const { nodes, projectTitle } = options
+  const locale = options.locale ?? readStoredLocale()
+  const dataUrl = await captureMapDataUrl({ nodes, format: 'png', locale })
+  const title = projectTitle.trim() || t(locale, 'newProject')
+
+  const html = `<!DOCTYPE html>
+<html lang="${locale}">
+<head>
+  <meta charset="utf-8" />
+  <title>${escapeHtml(title)}</title>
+  <style>
+    @page { margin: 10mm; }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #fff;
+      color: #111;
+      font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+    }
+    .head {
+      margin: 0 0 10px;
+    }
+    .head h1 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .head p {
+      margin: 4px 0 0;
+      font-size: 11px;
+      color: #6b7280;
+    }
+    img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="head">
+    <h1>${escapeHtml(title)}</h1>
+    <p>${escapeHtml(t(locale, 'printTopologyMeta'))}</p>
+  </div>
+  <img src="${dataUrl}" alt="${escapeHtml(title)}" />
+</body>
+</html>`
+
+  const iframe = document.createElement('iframe')
+  iframe.setAttribute('aria-hidden', 'true')
+  iframe.style.cssText =
+    'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none;'
+  document.body.appendChild(iframe)
+
+  const win = iframe.contentWindow
+  const doc = iframe.contentDocument
+  if (!win || !doc) {
+    document.body.removeChild(iframe)
+    throw new Error(t(locale, 'printTopologyFail'))
+  }
+
+  doc.open()
+  doc.write(html)
+  doc.close()
+
+  const cleanup = () => {
+    try {
+      document.body.removeChild(iframe)
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const runPrint = () => {
+    try {
+      win.focus()
+      win.print()
+    } finally {
+      window.setTimeout(cleanup, 1000)
+    }
+  }
+
+  if (doc.readyState === 'complete') {
+    window.setTimeout(runPrint, 50)
+  } else {
+    iframe.onload = () => window.setTimeout(runPrint, 50)
+  }
 }

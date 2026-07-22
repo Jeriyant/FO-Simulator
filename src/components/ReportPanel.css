@@ -154,11 +154,17 @@
   font-variant-numeric: tabular-nums;
 }
 
-.report-table-onu-loss th:nth-child(5),
-.report-table-onu-loss td:nth-child(5) {
+.report-table-onu-loss th:nth-child(4),
+.report-table-onu-loss td:nth-child(4) {
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.report-table-onu-loss th:nth-child(n + 5),
+.report-table-onu-loss td:nth-child(n + 5) {
+  text-align: left;
+  font-variant-numeric: normal;
 }
 
 .report-comment {

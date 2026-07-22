@@ -9,6 +9,7 @@ import {
   FolderOpen,
   PanelLeft,
   PanelLeftClose,
+  Printer,
   Redo2,
   Save,
   Settings,
@@ -31,6 +32,7 @@ type Props = {
   onSaveAs: () => void
   onExportPng: () => void
   onExportJpg: () => void
+  onPrintTopology: () => void
   onUndo: () => void
   onRedo: () => void
   onOpenSettings: () => void
@@ -54,6 +56,7 @@ export function ProjectToolbar({
   onSaveAs,
   onExportPng,
   onExportJpg,
+  onPrintTopology,
   onUndo,
   onRedo,
   onOpenSettings,
@@ -188,6 +191,13 @@ export function ProjectToolbar({
               <button type="button" role="menuitem" onClick={() => runFileAction(onExportJpg)}>
                 <FileImage size={15} />
                 <span>{t('exportJpg')}</span>
+              </button>
+              <button type="button" role="menuitem" onClick={() => runFileAction(onPrintTopology)}>
+                <Printer size={15} />
+                <span>
+                  {t('printTopology')}
+                  <small>Ctrl+P</small>
+                </span>
               </button>
             </div>
           )}

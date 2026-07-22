@@ -1,5 +1,5 @@
 import type { FoReport } from './materialReport'
-import { formatLossDb, formatPowerDbm } from './materialReport'
+import { formatPowerDbm } from './materialReport'
 import { slugifyFilename } from './projectFile'
 import { t, type Locale } from '../i18n/translations'
 
@@ -69,18 +69,16 @@ export async function exportReportToExcel(report: FoReport): Promise<void> {
         t(locale, 'reportColNo'),
         t(locale, 'label'),
         t(locale, 'reportColComponent'),
-        t(locale, 'reportColStatus'),
         t(locale, 'reportColRx'),
-        t(locale, 'reportColLoss'),
+        t(locale, 'reportColStatus'),
         t(locale, 'reportColComment'),
       ],
       ...report.rows.map((r) => [
         r.no,
         r.label,
         r.component,
-        r.status,
         formatPowerDbm(r.receivedPower),
-        formatLossDb(r.loss),
+        r.status,
         r.comment,
       ]),
     ]
