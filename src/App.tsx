@@ -629,7 +629,8 @@ function SimulatorCanvas({
       if (nextIds === curWirelessIds && withoutWireless.length + lan.wirelessEdges.length === eds.length) {
         return eds
       }
-      return [...withoutWireless, ...lan.wirelessEdges]
+      // Wireless di depan array agar digambar di bawah tali FO/LAN & di bawah node
+      return [...lan.wirelessEdges, ...withoutWireless]
     })
 
     setSelectedOnuId((prev) => {
@@ -783,7 +784,10 @@ function SimulatorCanvas({
           ...e,
           type: 'foWireless' as const,
           data: { ...edgeData, linkKind: 'wireless' as const },
-          animated: true,
+          // Animasi RF dimatikan; pulse CSS hanya saat sudah dapat IP (di FoWirelessEdge)
+          animated: false,
+          zIndex: 0,
+          className: 'fo-wireless-edge',
           reconnectable: false,
           label: undefined,
           style: { stroke: 'transparent', strokeWidth: 0 },

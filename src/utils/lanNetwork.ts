@@ -401,7 +401,9 @@ export function analyzeLanNetwork(
           lossPerKm: 0,
           linkKind: 'wireless',
         },
-        animated: true,
+        animated: false,
+        zIndex: 0,
+        className: 'fo-wireless-edge',
         style: { stroke: 'transparent', strokeWidth: 0 },
       })
     } else {
