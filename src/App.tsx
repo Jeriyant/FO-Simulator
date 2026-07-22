@@ -1796,6 +1796,8 @@ function SimulatorCanvas({
             panActivationKeyCode={isMobile ? null : 'Space'}
             zoomOnPinch
             zoomOnDoubleClick={!isMobile}
+            minZoom={0}
+            maxZoom={2}
             multiSelectionKeyCode={isMobile ? null : ['Control', 'Meta']}
             fitView
             deleteKeyCode={null}

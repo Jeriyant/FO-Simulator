@@ -10,7 +10,7 @@ import { slugifyFilename } from './projectFile'
 export type MapImageFormat = 'png' | 'jpg'
 
 const PADDING = 0.15
-const MIN_ZOOM = 0.1
+const MIN_ZOOM = 0
 const MAX_ZOOM = 2
 const MAX_SIDE = 4096
 const BG = '#f5f5f4'

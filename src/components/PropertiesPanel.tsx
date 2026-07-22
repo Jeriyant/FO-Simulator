@@ -332,29 +332,18 @@ export function PropertiesPanel({ node, allLabels, settings, onChange, onDelete,
       {draft.type === 'internet' || draft.type === 'mikrotik' ? (
         <>
           {draft.type === 'mikrotik' ? (
-            <>
-              <label className="prop-field prop-check">
-                <span>{t('propDhcpClient')}</span>
-                <input
-                  type="checkbox"
-                  checked={Boolean(draft.dhcpClient)}
-                  onChange={(e) => set({ dhcpClient: e.target.checked })}
-                />
-              </label>
-              <label className="prop-field">
-                <span>{t('propLanSpeed')}</span>
-                <input
-                  type="number"
-                  min={1}
-                  step={1}
-                  value={draft.lanSpeedMbps ?? 1000}
-                  onChange={(e) =>
-                    set({ lanSpeedMbps: Math.max(1, Number(e.target.value) || 1) })
-                  }
-                />
-                <div className="prop-meta">{t('propLanSpeedHint')}</div>
-              </label>
-            </>
+            <label className="prop-field">
+              <span>{t('propLanSpeed')}</span>
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={draft.lanSpeedMbps ?? 1000}
+                onChange={(e) =>
+                  set({ lanSpeedMbps: Math.max(1, Number(e.target.value) || 1) })
+                }
+              />
+            </label>
           ) : null}
           <div className="prop-section-title">{t('propDhcpServer')}</div>
           <label className="prop-field prop-check">

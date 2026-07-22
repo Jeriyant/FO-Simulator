@@ -65,7 +65,6 @@ export function MikrotikNode({ id, data, selected }: NodeProps<MikrotikNodeType>
         <strong>{data.label}</strong>
         <span className="fo-mikrotik-brand">{data.brand || t('comp_mikrotik')}</span>
         <div className="fo-mikrotik-meta">
-          <span>DHCP Client {data.dhcpClient ? 'ON' : 'OFF'}</span>
           <span>DHCP Server {data.dhcpServer?.enabled ? 'ON' : 'OFF'}</span>
           <span>Speed {data.lanSpeedMbps || 1000} Mbps</span>
         </div>

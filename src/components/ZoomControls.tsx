@@ -11,7 +11,7 @@ import { shallow } from 'zustand/shallow'
 import { useI18n } from '../i18n/context'
 import './ZoomControls.css'
 
-const MIN_ZOOM = 0.25
+const MIN_ZOOM = 0
 const MAX_ZOOM = 2
 const ZOOM_STEP = 0.01
 
