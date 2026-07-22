@@ -1,10 +1,15 @@
 import { useNodes, type Edge, type EdgeProps } from '@xyflow/react'
 import type { FoEdgeData, FoNodeData } from '../types/fo'
 
+/** Warna tali idle (tanpa live / tanpa WiFi IP) */
+const STROKE_IDLE = '#a8a29e'
+/** Warna tali LAN/DHCP hidup */
+const STROKE_LIVE = '#0284c7'
+
 /**
  * Koneksi WiFi visual: gelombang ) ) ) antara ONU ↔ Smartphone.
- * Semakin jauh → semakin padat.
- * Animasi (dhcp pulse) hanya jika sudah dapat IP; tanpa IP → statis.
+ * Tanpa IP → abu-abu statis (seperti tali idle).
+ * Ada IP → biru + animasi dash seperti tali hidup.
  */
 export function FoWirelessEdge({
   id,
@@ -28,20 +33,21 @@ export function FoWirelessEdge({
   const ux = dx / len
   const uy = dy / len
 
-  const spacing = Math.max(5, 17 - len * 0.03)
-  const usable = len * 0.8
-  const count = Math.max(6, Math.min(30, Math.round(usable / spacing)))
+  // Kepadatan dikurangi sedikit vs sebelumnya
+  const spacing = Math.max(9, 24 - len * 0.02)
+  const usable = len * 0.78
+  const count = Math.max(5, Math.min(16, Math.round(usable / spacing)))
 
-  const startT = 0.08
-  const endT = 0.92
-  const radiusStep = Math.max(1.2, 3.2 - len * 0.0045)
+  const startT = 0.1
+  const endT = 0.9
+  const radiusStep = Math.max(1.6, 3.6 - len * 0.0035)
 
   const arcs = Array.from({ length: count }, (_, i) => {
     const t =
       count <= 1 ? 0.5 : startT + ((endT - startT) * i) / (count - 1)
     const cx = sourceX + dx * t
     const cy = sourceY + dy * t
-    const r = 5 + i * radiusStep
+    const r = 5.5 + i * radiusStep
     const a0 = Math.atan2(uy, ux) - Math.PI / 2.35
     const a1 = Math.atan2(uy, ux) + Math.PI / 2.35
     const x1 = cx + Math.cos(a0) * r
@@ -50,10 +56,9 @@ export function FoWirelessEdge({
     const y2 = cy + Math.sin(a1) * r
     return {
       d: `M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}`,
-      delay: (i / count) * 0.55,
       opacity: hasIp
-        ? 0.35 + (i / Math.max(count - 1, 1)) * 0.5
-        : 0.4 + (i / Math.max(count - 1, 1)) * 0.25,
+        ? 0.55 + (i / Math.max(count - 1, 1)) * 0.35
+        : 0.45 + (i / Math.max(count - 1, 1)) * 0.2,
     }
   })
 
@@ -67,12 +72,11 @@ export function FoWirelessEdge({
           key={i}
           d={arc.d}
           fill="none"
-          stroke={hasIp ? '#0284c7' : '#a78bfa'}
+          stroke={hasIp ? STROKE_LIVE : STROKE_IDLE}
           strokeWidth={hasIp ? 2.4 : 2}
           strokeLinecap="round"
           opacity={arc.opacity}
-          className={`fo-wifi-arc ${hasIp ? 'dhcp' : 'static'}`}
-          style={hasIp ? { animationDelay: `${arc.delay}s` } : undefined}
+          className={`fo-wifi-arc ${hasIp ? 'flow' : 'static'}`}
         />
       ))}
     </g>

@@ -564,7 +564,9 @@ function SimulatorCanvas({
         if (u.data.type === 'mikrotik' && cur.data.type === 'mikrotik') {
           if (
             cur.data.wanIp === u.data.wanIp &&
-            cur.data.wanConnected === u.data.wanConnected
+            cur.data.wanConnected === u.data.wanConnected &&
+            cur.data.wanLinked === u.data.wanLinked &&
+            cur.data.inetLed === u.data.inetLed
           ) {
             return cur
           }
@@ -580,7 +582,8 @@ function SimulatorCanvas({
             cur.data.gateway === u.data.gateway &&
             cur.data.subnetMask === u.data.subnetMask &&
             cur.data.wirelessOnuId === u.data.wirelessOnuId &&
-            cur.data.speedMbps === u.data.speedMbps
+            cur.data.speedMbps === u.data.speedMbps &&
+            cur.data.inetLed === u.data.inetLed
           ) {
             return cur
           }
@@ -594,7 +597,8 @@ function SimulatorCanvas({
             cur.data.ipAddress === u.data.ipAddress &&
             cur.data.gateway === u.data.gateway &&
             cur.data.subnetMask === u.data.subnetMask &&
-            cur.data.speedMbps === u.data.speedMbps
+            cur.data.speedMbps === u.data.speedMbps &&
+            cur.data.inetLed === u.data.inetLed
           ) {
             return cur
           }
@@ -659,7 +663,15 @@ function SimulatorCanvas({
           return `${n.id}:sb:${JSON.stringify(stable)}`
         }
         if (n.data.type === 'mikrotik') {
-          const { wanIp: _w, wanConnected: _c, wanGateway: _g, wanSubnetMask: _m, ...stable } = n.data
+          const {
+            wanIp: _w,
+            wanConnected: _c,
+            wanGateway: _g,
+            wanSubnetMask: _m,
+            wanLinked: _wl,
+            inetLed: _il,
+            ...stable
+          } = n.data
           return `${n.id}:mt:${JSON.stringify(stable)}`
         }
         if (n.data.type === 'smartphone') {
@@ -673,6 +685,7 @@ function SimulatorCanvas({
             gateway: _g,
             subnetMask: _sm,
             ipAddress: _ip,
+            inetLed: _il,
             ...stable
           } = n.data
           return `${n.id}:hp:${JSON.stringify(stable)}`
@@ -684,6 +697,7 @@ function SimulatorCanvas({
             gateway: _g,
             subnetMask: _sm,
             ipAddress: _ip,
+            inetLed: _il,
             ...stable
           } = n.data
           return `${n.id}:pc:${JSON.stringify(stable)}`

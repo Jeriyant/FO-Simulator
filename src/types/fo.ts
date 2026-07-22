@@ -1,6 +1,9 @@
 import type { ComponentType } from '../data/components'
 import type { SignalStatus } from '../settings/types'
 
+/** Lampu status Internet: abu / merah berkedip / hijau berkedip */
+export type InetLedStatus = 'gray' | 'red' | 'green'
+
 type FoBase = {
   label: string
   comment: string
@@ -107,6 +110,10 @@ export type MikrotikData = FoBase & {
   wanGateway?: string | null
   wanSubnetMask?: string | null
   wanConnected?: boolean
+  /** Runtime: ada tali WAN ke komponen Internet */
+  wanLinked?: boolean
+  /** Lampu status Internet */
+  inetLed?: InetLedStatus
 }
 
 /** Smartphone — wireless ke ONU (SSID/password) */
@@ -122,6 +129,8 @@ export type SmartphoneData = FoBase & {
   wifiConnected?: boolean
   /** Online = dapat IP dari DHCP Mikrotik */
   online?: boolean
+  /** Lampu status Internet */
+  inetLed?: InetLedStatus
   speedMbps?: number | null
   connectedSsid?: string | null
   connectedPassword?: string | null
@@ -135,6 +144,8 @@ export type KomputerData = FoBase & {
   gateway?: string | null
   subnetMask?: string | null
   connected?: boolean
+  /** Lampu status Internet */
+  inetLed?: InetLedStatus
   speedMbps?: number | null
 }
 

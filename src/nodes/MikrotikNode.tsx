@@ -20,6 +20,15 @@ export function MikrotikNode({ id, data, selected }: NodeProps<MikrotikNodeType>
   const { t } = useI18n()
   const edges = useEdges()
   const wanOk = Boolean(data.wanConnected)
+  const led = data.inetLed ?? 'gray'
+  const ledClass =
+    led === 'green' ? 'on blink' : led === 'red' ? 'err blink' : 'gray'
+  const ledTitle =
+    led === 'green'
+      ? 'Online · Internet'
+      : led === 'red'
+        ? 'WAN linked · no IP'
+        : 'No cable to Internet'
   const lanCidr = data.dhcpServer?.enabled
     ? resolveDhcpCidr(data.dhcpServer)?.cidr
     : null
@@ -35,7 +44,7 @@ export function MikrotikNode({ id, data, selected }: NodeProps<MikrotikNodeType>
   }, [edges, id])
 
   return (
-    <div className={`fo-mikrotik ${selected ? 'selected' : ''} ${wanOk ? 'is-online' : ''}`}>
+    <div className={`fo-mikrotik ${selected ? 'selected' : ''} ${led === 'green' ? 'is-online' : ''}`}>
       <Handle
         type="target"
         position={Position.Left}
@@ -59,7 +68,7 @@ export function MikrotikNode({ id, data, selected }: NodeProps<MikrotikNodeType>
       <div className="fo-mikrotik-box">
         <div className="fo-mikrotik-top">
           <span className="fo-mikrotik-logo">MikroTik</span>
-          <i className={`fo-mikrotik-led ${wanOk ? 'on blink' : ''}`} />
+          <i className={`fo-mikrotik-led ${ledClass}`} title={ledTitle} />
         </div>
         <div className="fo-mikrotik-vents" aria-hidden="true" />
         <strong>{data.label}</strong>

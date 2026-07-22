@@ -10,10 +10,19 @@ export function SmartphoneNode({ data, selected }: NodeProps<SmartphoneNodeType>
   const { t } = useI18n()
   const wifiOk = Boolean(data.wifiConnected)
   const online = Boolean(data.online)
+  const led = data.inetLed ?? 'gray'
+  const ledClass =
+    led === 'green' ? 'on blink' : led === 'red' ? 'err blink' : 'gray'
+  const ledTitle =
+    led === 'green'
+      ? 'Online · Internet OK'
+      : led === 'red'
+        ? 'Terpasang · belum IP / Internet MT / FO ONU'
+        : 'WiFi belum ke ONU'
 
   return (
     <div
-      className={`fo-phone ${selected ? 'selected' : ''} ${wifiOk ? 'is-wifi' : ''} ${online ? 'is-online' : ''}`}
+      className={`fo-phone ${selected ? 'selected' : ''} ${wifiOk ? 'is-wifi' : ''} ${led === 'green' ? 'is-online' : ''}`}
     >
       <Handle
         type="target"
@@ -24,10 +33,7 @@ export function SmartphoneNode({ data, selected }: NodeProps<SmartphoneNodeType>
       />
 
       <div className="fo-phone-device">
-        <div
-          className={`fo-phone-online ${online ? 'on blink' : ''}`}
-          title={online ? 'Online' : wifiOk ? 'WiFi · no DHCP' : 'Offline'}
-        />
+        <div className={`fo-phone-online ${ledClass}`} title={ledTitle} />
         <div className="fo-phone-notch" aria-hidden="true" />
         <div className="fo-phone-screen">
           <strong>{data.label}</strong>

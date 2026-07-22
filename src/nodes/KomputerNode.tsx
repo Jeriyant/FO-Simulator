@@ -9,9 +9,18 @@ type KomputerNodeType = Node<KomputerData, 'komputer'>
 export function KomputerNode({ data, selected }: NodeProps<KomputerNodeType>) {
   const { t } = useI18n()
   const connected = Boolean(data.connected)
+  const led = data.inetLed ?? 'gray'
+  const ledClass =
+    led === 'green' ? 'on blink' : led === 'red' ? 'err blink' : 'gray'
+  const ledTitle =
+    led === 'green'
+      ? 'Online · Internet OK'
+      : led === 'red'
+        ? 'Terpasang · belum IP / Internet MT / FO ONU'
+        : 'Tali belum ke ONU/Mikrotik'
 
   return (
-    <div className={`fo-pc ${selected ? 'selected' : ''} ${connected ? 'is-online' : ''}`}>
+    <div className={`fo-pc ${selected ? 'selected' : ''} ${led === 'green' ? 'is-online' : ''}`}>
       <Handle
         type="target"
         position={Position.Top}
@@ -21,10 +30,7 @@ export function KomputerNode({ data, selected }: NodeProps<KomputerNodeType>) {
       />
 
       <div className="fo-pc-tower">
-        <div
-          className={`fo-pc-online ${connected ? 'on blink' : ''}`}
-          title={connected ? 'Online' : 'Offline'}
-        />
+        <div className={`fo-pc-online ${ledClass}`} title={ledTitle} />
         <div className="fo-pc-monitor">
           <div className="fo-pc-screen">
             <strong>{data.label}</strong>

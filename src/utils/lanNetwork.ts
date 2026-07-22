@@ -3,6 +3,7 @@ import type {
   DhcpServerConfig,
   FoEdgeData,
   FoNodeData,
+  InetLedStatus,
   InternetData,
   KomputerData,
   MikrotikData,
@@ -86,12 +87,12 @@ function dhcpKey(dhcp: DhcpServerConfig): string {
   return `${r?.cidr ?? ''}|${pool?.poolStart ?? ''}|${pool?.poolEnd ?? ''}`
 }
 
-/** Cari Mikrotik lewat jalur LAN saja (bukan FO optik). */
-function findUpstreamMikrotik(
+/** Cari id Mikrotik lewat jalur LAN saja (bukan FO optik). */
+function findUpstreamMikrotikId(
   nodes: Node<FoNodeData>[],
   edges: Edge<FoEdgeData>[],
   startId: string,
-): MikrotikData | null {
+): string | null {
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
   const visited = new Set<string>()
   const queue = [startId]
@@ -101,12 +102,9 @@ function findUpstreamMikrotik(
     visited.add(id)
     const node = nodeMap.get(id)
     if (!node) continue
-    if (node.data.type === 'mikrotik' && node.data.dhcpServer?.enabled) {
-      return node.data
-    }
+    if (node.data.type === 'mikrotik') return id
     for (const e of edges) {
       if (e.data?.linkKind === 'wireless' || e.data?.linkKind === 'fo') continue
-      // Hanya ikuti edge LAN / tanpa kind (treat as possible LAN if handles LAN)
       const lanish =
         e.data?.linkKind === 'lan' ||
         isLanHandle(e.sourceHandle) ||
@@ -116,11 +114,24 @@ function findUpstreamMikrotik(
       if (e.source === id) queue.push(e.target)
     }
   }
-  // Fallback: mikrotik DHCP manapun di kanvas
-  for (const n of nodes) {
-    if (n.data.type === 'mikrotik' && n.data.dhcpServer?.enabled) return n.data
-  }
   return null
+}
+
+/** Cari Mikrotik lewat jalur LAN saja (bukan FO optik). */
+function findUpstreamMikrotik(
+  nodes: Node<FoNodeData>[],
+  edges: Edge<FoEdgeData>[],
+  startId: string,
+): MikrotikData | null {
+  const id = findUpstreamMikrotikId(nodes, edges, startId)
+  if (!id) {
+    for (const n of nodes) {
+      if (n.data.type === 'mikrotik' && n.data.dhcpServer?.enabled) return n.data
+    }
+    return null
+  }
+  const node = nodes.find((n) => n.id === id)
+  return node?.data.type === 'mikrotik' ? node.data : null
 }
 
 function findInternet(nodes: Node<FoNodeData>[]): InternetData | null {
@@ -128,6 +139,115 @@ function findInternet(nodes: Node<FoNodeData>[]): InternetData | null {
     if (n.data.type === 'internet') return n.data
   }
   return null
+}
+
+/** True jika ada jalur LAN/WiFi ke node Internet (bukan tali FO optik). */
+export function reachesInternet(
+  nodes: Node<FoNodeData>[],
+  edges: Edge<FoEdgeData>[],
+  startId: string,
+): boolean {
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]))
+  if (!nodes.some((n) => n.data.type === 'internet')) return false
+
+  const visited = new Set<string>()
+  const queue = [startId]
+  while (queue.length) {
+    const id = queue.shift()!
+    if (visited.has(id)) continue
+    visited.add(id)
+    const node = nodeMap.get(id)
+    if (!node) continue
+    if (node.data.type === 'internet') return true
+
+    for (const e of edges) {
+      if (e.data?.linkKind === 'fo') continue
+      const other =
+        e.source === id ? e.target : e.target === id ? e.source : null
+      if (!other || visited.has(other)) continue
+      const kind = e.data?.linkKind
+      if (kind === 'wireless' || kind === 'lan' || !kind) {
+        queue.push(other)
+      }
+    }
+  }
+  return false
+}
+
+function mtLed(linked: boolean, hasWanIp: boolean): InetLedStatus {
+  if (!linked) return 'gray'
+  if (!hasWanIp) return 'red'
+  return 'green'
+}
+
+/**
+ * Klien (HP/PC):
+ * - abu: tali/WiFi belum terpasang
+ * - merah: terpasang tapi belum IP, atau MT tanpa Internet, atau jalur FO ONU belum hidup
+ * - hijau: uplink + IP + MT WAN OK + (via ONU: sinyal FO ke OLT hidup)
+ */
+function clientLed(opts: {
+  hasUplink: boolean
+  hasIp: boolean
+  mtWanOk: boolean
+  /** null = langsung ke Mikrotik (tanpa ONU); false = ONU FO mati */
+  onuOpticalLive: boolean | null
+}): InetLedStatus {
+  if (!opts.hasUplink) return 'gray'
+  if (!opts.hasIp || !opts.mtWanOk) return 'red'
+  if (opts.onuOpticalLive === false) return 'red'
+  return 'green'
+}
+
+function hasWiredUplinkToOnuOrMt(
+  edges: Edge<FoEdgeData>[],
+  nodeMap: Map<string, Node<FoNodeData>>,
+  clientId: string,
+): boolean {
+  for (const e of edges) {
+    if (e.data?.linkKind === 'wireless' || e.data?.linkKind === 'fo') continue
+    const peerId =
+      e.target === clientId ? e.source : e.source === clientId ? e.target : null
+    if (!peerId) continue
+    const t = nodeMap.get(peerId)?.data.type
+    if (t === 'mikrotik' || t === 'onu' || t === 'onuDual') return true
+  }
+  return false
+}
+
+/** ONU tetangga LAN untuk komputer (atau null jika langsung ke Mikrotik). */
+function findWiredPeerOnuId(
+  edges: Edge<FoEdgeData>[],
+  nodeMap: Map<string, Node<FoNodeData>>,
+  clientId: string,
+): string | null {
+  for (const e of edges) {
+    if (e.data?.linkKind === 'wireless' || e.data?.linkKind === 'fo') continue
+    const peerId =
+      e.target === clientId ? e.source : e.source === clientId ? e.target : null
+    if (!peerId) continue
+    const t = nodeMap.get(peerId)?.data.type
+    if (t === 'onu' || t === 'onuDual') return peerId
+  }
+  return null
+}
+
+function isOnuOpticalLive(
+  nodes: Node<FoNodeData>[],
+  onuId: string | null | undefined,
+): boolean | null {
+  if (!onuId) return null
+  const onu = nodes.find((n) => n.id === onuId)
+  if (!onu || !isOnuType(onu.data)) return false
+  return onu.data.status !== 'disconnected'
+}
+
+function mtWanOk(mt: MikrotikData | null): boolean {
+  return Boolean(mt?.wanLinked && mt?.wanConnected)
+}
+
+function clientHasIp(ip: string | undefined | null): boolean {
+  return Boolean((ip ?? '').trim())
 }
 
 function lanNeighbors(
@@ -209,7 +329,9 @@ export function analyzeLanNetwork(
         wanIp,
         wanGateway: inetResolved?.cidr ?? inetDhcp.cidr,
         wanSubnetMask: inetResolved ? `/${inetResolved.prefix}` : null,
+        wanLinked: linkedToInternet,
         wanConnected: true,
+        inetLed: mtLed(linkedToInternet, true),
       } as MikrotikData)
     } else {
       patches.set(n.id, {
@@ -217,7 +339,9 @@ export function analyzeLanNetwork(
         wanIp: null,
         wanGateway: null,
         wanSubnetMask: null,
+        wanLinked: linkedToInternet,
         wanConnected: false,
+        inetLed: mtLed(linkedToInternet, false),
       } as MikrotikData)
     }
   }
@@ -320,7 +444,8 @@ export function analyzeLanNetwork(
     }
   }
 
-  // Smartphone: wajib cocok SSID & password ke ONU FO-linked
+  // Smartphone: cocok SSID & password ke ONU → selalu gambar gelombang WiFi.
+  // FO ONU mati / tanpa DHCP → gelombang abu (tanpa animasi); ada IP → biru mengalir.
   for (const n of nodes) {
     if (n.data.type !== 'smartphone') continue
     const phone = n.data
@@ -330,7 +455,6 @@ export function analyzeLanNetwork(
     let matched: Node<FoNodeData> | null = null
     for (const onu of nodes) {
       if (!isOnuType(onu.data)) continue
-      if (onu.data.status === 'disconnected') continue
       if (!credsMatch(phoneSsid, onu.data.ssid)) continue
       if (!credsMatch(phonePass, onu.data.wifiPassword)) continue
       matched = onu
@@ -338,13 +462,7 @@ export function analyzeLanNetwork(
     }
 
     if (matched && isOnuType(matched.data)) {
-      const mt = findUpstreamMikrotik(nodes, edges, matched.id)
-      const dhcp = mt?.dhcpServer?.enabled ? mt.dhcpServer : null
-      const speed = computeClientSpeedMbps({
-        mikrotikSpeedMbps: mt?.lanSpeedMbps || 1000,
-        onuSpeedMbps: matched.data.speedMbps || 100,
-        onuStatus: matched.data.status,
-      })
+      const foLive = matched.data.status !== 'disconnected'
       const wifiExtra = {
         wifiConnected: true,
         connectedSsid: matched.data.ssid,
@@ -352,8 +470,28 @@ export function analyzeLanNetwork(
         wirelessOnuId: matched.id,
       }
 
-      if (dhcp) {
-        assignClient(n.id, dhcp, speed, 'smartphone', wifiExtra)
+      // DHCP / IP hanya jika ONU FO-linked
+      if (foLive) {
+        const mt = findUpstreamMikrotik(nodes, edges, matched.id)
+        const dhcp = mt?.dhcpServer?.enabled ? mt.dhcpServer : null
+        const speed = computeClientSpeedMbps({
+          mikrotikSpeedMbps: mt?.lanSpeedMbps || 1000,
+          onuSpeedMbps: matched.data.speedMbps || 100,
+          onuStatus: matched.data.status,
+        })
+        if (dhcp) {
+          assignClient(n.id, dhcp, speed, 'smartphone', wifiExtra)
+        } else {
+          patches.set(n.id, {
+            ...phone,
+            ...wifiExtra,
+            online: false,
+            speedMbps: null,
+            ipAddress: '',
+            gateway: null,
+            subnetMask: null,
+          } as SmartphoneData)
+        }
       } else {
         patches.set(n.id, {
           ...phone,
@@ -366,6 +504,7 @@ export function analyzeLanNetwork(
         } as SmartphoneData)
       }
 
+      // Gelombang tetap digambar (abu jika belum IP; biru jika sudah)
       wirelessEdges.push({
         id: `wireless-${matched.id}-${n.id}`,
         source: matched.id,
@@ -410,6 +549,61 @@ export function analyzeLanNetwork(
         gateway: null,
         subnetMask: null,
         ipAddress: '',
+      } as KomputerData)
+    }
+  }
+
+  // Lampu status Internet (abu / merah / hijau)
+  const getMtPatch = (mtId: string): MikrotikData | null => {
+    const raw = patches.get(mtId) ?? nodeMap.get(mtId)?.data
+    return raw && raw.type === 'mikrotik' ? (raw as MikrotikData) : null
+  }
+
+  /** Sama seperti DHCP: cari MT lewat LAN, fallback MT DHCP manapun. */
+  const resolveMtForClient = (startId: string): MikrotikData | null => {
+    const mtId = findUpstreamMikrotikId(nodes, edges, startId)
+    if (mtId) return getMtPatch(mtId)
+    for (const cand of nodes) {
+      if (cand.data.type === 'mikrotik' && cand.data.dhcpServer?.enabled) {
+        return getMtPatch(cand.id)
+      }
+    }
+    return null
+  }
+
+  for (const n of nodes) {
+    if (n.data.type === 'mikrotik') continue
+
+    if (n.data.type === 'smartphone') {
+      const phone = (patches.get(n.id) ?? n.data) as SmartphoneData
+      const hasUplink = Boolean(phone.wifiConnected)
+      const onuId = phone.wirelessOnuId
+      const mtData = onuId ? resolveMtForClient(onuId) : null
+      patches.set(n.id, {
+        ...phone,
+        inetLed: clientLed({
+          hasUplink,
+          hasIp: clientHasIp(phone.ipAddress),
+          mtWanOk: mtWanOk(mtData),
+          onuOpticalLive: isOnuOpticalLive(nodes, onuId),
+        }),
+      } as SmartphoneData)
+      continue
+    }
+
+    if (n.data.type === 'komputer') {
+      const pc = (patches.get(n.id) ?? n.data) as KomputerData
+      const hasUplink = hasWiredUplinkToOnuOrMt(edges, nodeMap, n.id)
+      const onuId = findWiredPeerOnuId(edges, nodeMap, n.id)
+      const mtData = hasUplink ? resolveMtForClient(n.id) : null
+      patches.set(n.id, {
+        ...pc,
+        inetLed: clientLed({
+          hasUplink,
+          hasIp: clientHasIp(pc.ipAddress),
+          mtWanOk: mtWanOk(mtData),
+          onuOpticalLive: onuId ? isOnuOpticalLive(nodes, onuId) : null,
+        }),
       } as KomputerData)
     }
   }
