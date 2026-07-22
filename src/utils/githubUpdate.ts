@@ -3,6 +3,7 @@ import {
   GITHUB_RELEASES_API,
   GITHUB_REPO_URL,
   getUpdateApiUrl,
+  getUpdateProgressUrl,
 } from '../config/github'
 
 export type LatestReleaseInfo = {
@@ -11,6 +12,15 @@ export type LatestReleaseInfo = {
   notes: string
   htmlUrl: string
   downloadUrl: string | null
+}
+
+export type UpdateProgress = {
+  stage: string
+  percent: number
+  message: string
+  bytesReceived: number
+  bytesTotal: number
+  updatedAt?: number
 }
 
 export type ApplyUpdateResult = {
@@ -126,10 +136,52 @@ export async function fetchLatestRelease(
   }
 }
 
-/** Jalankan update.sh lewat update.php (PHP). */
+/** Jalankan update.sh lewat update.php (PHP), sambil poll progress. */
 export async function applyServerUpdate(
   signal?: AbortSignal,
+  onProgress?: (progress: UpdateProgress) => void,
 ): Promise<ApplyUpdateResult> {
+  let pollTimer: ReturnType<typeof setInterval> | undefined
+
+  const pollProgress = async () => {
+    try {
+      const res = await fetch(getUpdateProgressUrl(), {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+        signal,
+      })
+      if (!res.ok) return
+      const data = (await res.json()) as Partial<UpdateProgress>
+      if (!data || typeof data !== 'object') return
+      onProgress?.({
+        stage: typeof data.stage === 'string' ? data.stage : 'idle',
+        percent: typeof data.percent === 'number' ? data.percent : 0,
+        message: typeof data.message === 'string' ? data.message : '',
+        bytesReceived:
+          typeof data.bytesReceived === 'number' ? data.bytesReceived : 0,
+        bytesTotal: typeof data.bytesTotal === 'number' ? data.bytesTotal : 0,
+        updatedAt: data.updatedAt,
+      })
+    } catch {
+      /* ignore poll errors while update runs */
+    }
+  }
+
+  if (onProgress) {
+    onProgress({
+      stage: 'check',
+      percent: 0,
+      message: 'Memulai update…',
+      bytesReceived: 0,
+      bytesTotal: 0,
+    })
+    void pollProgress()
+    pollTimer = setInterval(() => {
+      void pollProgress()
+    }, 400)
+  }
+
   let res: Response
   try {
     res = await fetch(getUpdateApiUrl(), {
@@ -138,12 +190,17 @@ export async function applyServerUpdate(
       signal,
     })
   } catch {
+    if (pollTimer) clearInterval(pollTimer)
     return {
       ok: false,
       error:
         'update.php tidak terjangkau. Pastikan PHP aktif dan file update.php ada sejajar index.html.',
     }
+  } finally {
+    if (pollTimer) clearInterval(pollTimer)
   }
+
+  await pollProgress()
 
   let data: ApplyUpdateResult = { ok: false }
   try {

@@ -256,6 +256,7 @@ export function SettingsPanel({
           status={update.status}
           latest={update.latest}
           error={update.error}
+          progress={update.progress}
           onCheck={() => {
             void update.checkNow()
           }}

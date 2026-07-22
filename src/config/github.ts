@@ -14,3 +14,9 @@ export function getUpdateApiUrl(): string {
   if (typeof window === 'undefined') return './update.php'
   return new URL('update.php', window.location.href).href
 }
+
+/** GET progress dari update.php (dipoll saat memasang). */
+export function getUpdateProgressUrl(): string {
+  return getUpdateApiUrl()
+}
+

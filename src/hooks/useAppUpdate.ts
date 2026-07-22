@@ -5,6 +5,7 @@ import {
   compareSemver,
   fetchLatestRelease,
   type LatestReleaseInfo,
+  type UpdateProgress,
 } from '../utils/githubUpdate'
 
 const DISMISS_KEY = 'fo-update-dismissed'
@@ -21,6 +22,7 @@ export type AppUpdateState = {
   status: UpdateStatus
   latest: LatestReleaseInfo | null
   error: string | null
+  progress: UpdateProgress | null
   showBanner: boolean
   checkNow: () => Promise<void>
   applyUpdate: () => Promise<void>
@@ -47,6 +49,7 @@ export function useAppUpdate(): AppUpdateState {
   const [status, setStatus] = useState<UpdateStatus>('idle')
   const [latest, setLatest] = useState<LatestReleaseInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [progress, setProgress] = useState<UpdateProgress | null>(null)
   const [dismissedTag, setDismissedTag] = useState<string | null>(() => readDismissedTag())
   const abortRef = useRef<AbortController | null>(null)
 
@@ -73,7 +76,16 @@ export function useAppUpdate(): AppUpdateState {
   const applyUpdate = useCallback(async () => {
     setStatus('applying')
     setError(null)
-    const result = await applyServerUpdate()
+    setProgress({
+      stage: 'check',
+      percent: 0,
+      message: 'Memulai update…',
+      bytesReceived: 0,
+      bytesTotal: 0,
+    })
+    const result = await applyServerUpdate(undefined, (p) => {
+      setProgress(p)
+    })
     if (!result.ok) {
       setError(result.error || 'Update failed')
       setStatus('available')
@@ -110,6 +122,7 @@ export function useAppUpdate(): AppUpdateState {
     status,
     latest,
     error,
+    progress,
     showBanner,
     checkNow,
     applyUpdate,

@@ -1778,6 +1778,7 @@ function SimulatorCanvas({
             latest={appUpdate.latest}
             applying={appUpdate.status === 'applying'}
             error={appUpdate.error}
+            progress={appUpdate.progress}
             onApply={() => {
               void appUpdate.applyUpdate()
             }}

@@ -7,7 +7,8 @@
 #   ./update.sh --check
 #
 # UI:
-#   POST update.php  → menjalankan update.sh
+#   GET  update.php  → progress JSON
+#   POST update.php  → jalankan update.sh
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -16,6 +17,7 @@ APP_DIR="$(pwd)"
 VERSION_FILE="./version.json"
 ZIP_FILE="./fo-simulator-dist.zip"
 LOCK_FILE="./.update.lock"
+PROGRESS_FILE="./.update-progress.json"
 EXTRACT_TMP="./.update-extract-tmp"
 GITHUB_OWNER="${FO_GITHUB_OWNER:-Jeriyant}"
 GITHUB_REPO="${FO_GITHUB_REPO:-FO-Simulator}"
@@ -24,7 +26,6 @@ API_URL="https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/la
 USER_AGENT="FO-Simulator-Updater/${HOSTNAME:-server}"
 
 IS_CGI=false
-# Hanya mode CGI Apache sejati (bukan saat dipanggil dari update.php / CLI)
 if [[ -n "${REQUEST_METHOD:-}" && -n "${GATEWAY_INTERFACE:-}" ]]; then
   IS_CGI=true
 fi
@@ -41,14 +42,13 @@ for arg in "$@"; do
   ./update.sh           # update folder ini dari GitHub
   ./update.sh --force
   ./update.sh --check
-  UI: POST update.php
+  UI: POST update.php (progress: GET update.php)
 EOF
       exit 0
       ;;
   esac
 done
 
-# Dari UI selalu paksa pasang (user sudah lihat ada versi baru)
 if [[ "$IS_CGI" == true ]]; then
   FORCE=true
   case "${REQUEST_METHOD}" in
@@ -85,8 +85,18 @@ cgi_json() {
   printf '{"ok":%s,%s}\n' "$ok" "$body"
 }
 
+write_progress() {
+  local stage="$1" percent="$2" message="$3"
+  local received="${4:-0}" total="${5:-0}"
+  local tmp="${PROGRESS_FILE}.tmp"
+  printf '{"stage":"%s","percent":%s,"message":"%s","bytesReceived":%s,"bytesTotal":%s,"updatedAt":%s}\n' \
+    "$stage" "$percent" "$(json_escape "$message")" "$received" "$total" "$(date +%s)" >"$tmp"
+  mv -f "$tmp" "$PROGRESS_FILE"
+}
+
 fail() {
   local msg="$1"
+  write_progress "error" 0 "$msg" 0 0 || true
   if [[ "$IS_CGI" == true ]]; then
     cgi_json "500 Internal Server Error" "false" "\"error\":\"$(json_escape "$msg")\""
     exit 0
@@ -99,7 +109,6 @@ log() { echo "$@" >&2; }
 
 have_cmd() { command -v "$1" >/dev/null 2>&1; }
 
-# Cegah dua update bersamaan (klik berulang / request paralel)
 exec 9>"$LOCK_FILE"
 if have_cmd flock; then
   if ! flock -n 9; then
@@ -108,37 +117,146 @@ if have_cmd flock; then
 fi
 
 log "==> App dir: $APP_DIR"
+write_progress "check" 2 "Memeriksa release GitHub…" 0 0
 
-have_cmd curl || have_cmd wget || fail "butuh curl atau wget"
+have_cmd curl || have_cmd wget || have_cmd python3 || fail "butuh curl, wget, atau python3"
 
+# Unduh kecil (metadata) tanpa percent detail
 download() {
   local url="$1" out="$2"
-  local attempt=1 max=5
-  local delay=2
+  local attempt=1 max=5 delay=2
   while (( attempt <= max )); do
     log "    unduh (percobaan $attempt/$max)..."
     rm -f "$out"
     if have_cmd curl; then
-      if curl -fsSL \
-        --connect-timeout 20 \
-        --max-time 300 \
-        --retry 3 \
-        --retry-delay 2 \
-        -A "$USER_AGENT" \
-        -H "Accept: application/vnd.github+json" \
-        -H "X-GitHub-Api-Version: 2022-11-28" \
-        -o "$out" "$url" \
-        && [[ -s "$out" ]]
-      then
+      if curl -fsSL --connect-timeout 20 --max-time 120 --retry 2 --retry-delay 1 \
+        -A "$USER_AGENT" -H "Accept: application/vnd.github+json" \
+        -H "X-GitHub-Api-Version: 2022-11-28" -o "$out" "$url" && [[ -s "$out" ]]; then
         return 0
       fi
-    elif wget -q --tries=3 --timeout=30 -U "$USER_AGENT" -O "$out" "$url" && [[ -s "$out" ]]; then
+    elif have_cmd wget; then
+      if wget -q --tries=3 --timeout=30 -U "$USER_AGENT" -O "$out" "$url" && [[ -s "$out" ]]; then
+        return 0
+      fi
+    elif have_cmd python3; then
+      if python3 - "$url" "$out" "$USER_AGENT" <<'PY'
+import sys, urllib.request
+url, out, ua = sys.argv[1], sys.argv[2], sys.argv[3]
+req = urllib.request.Request(url, headers={"User-Agent": ua, "Accept": "application/vnd.github+json"})
+with urllib.request.urlopen(req, timeout=120) as r, open(out, "wb") as f:
+    f.write(r.read())
+PY
+      then
+        [[ -s "$out" ]] && return 0
+      fi
+    fi
+    rm -f "$out"
+    (( attempt == max )) && return 1
+    sleep "$delay"
+    delay=$((delay * 2))
+    attempt=$((attempt + 1))
+  done
+  return 1
+}
+
+# Unduh zip dengan progress → .update-progress.json (dipoll UI)
+download_zip() {
+  local url="$1" out="$2"
+  local attempt=1 max=5 delay=2
+  while (( attempt <= max )); do
+    log "    unduh zip (percobaan $attempt/$max)..."
+    write_progress "download" 0 "Mengunduh paket… (percobaan $attempt/$max)" 0 0
+    rm -f "$out"
+    local ok=false
+    if have_cmd python3; then
+      if python3 - "$url" "$out" "$PROGRESS_FILE" "$USER_AGENT" <<'PY'
+import json, os, sys, time, urllib.request
+
+url, out, progress_path, ua = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+
+def write(stage, percent, message, received=0, total=0):
+    payload = {
+        "stage": stage,
+        "percent": int(percent),
+        "message": message,
+        "bytesReceived": int(received),
+        "bytesTotal": int(total),
+        "updatedAt": int(time.time()),
+    }
+    tmp = progress_path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False)
+        f.write("\n")
+    os.replace(tmp, progress_path)
+
+req = urllib.request.Request(
+    url,
+    headers={
+        "User-Agent": ua,
+        "Accept": "application/octet-stream",
+    },
+)
+try:
+    with urllib.request.urlopen(req, timeout=300) as resp:
+        total = int(resp.headers.get("Content-Length") or 0)
+        received = 0
+        last_pct = -1
+        last_t = 0.0
+        chunk_size = 64 * 1024
+        with open(out, "wb") as f:
+            while True:
+                chunk = resp.read(chunk_size)
+                if not chunk:
+                    break
+                f.write(chunk)
+                received += len(chunk)
+                now = time.time()
+                pct = int(received * 100 / total) if total else 0
+                if pct != last_pct or (now - last_t) >= 0.4:
+                    if total:
+                        msg = f"Mengunduh… {pct}% ({received // 1024} KB / {total // 1024} KB)"
+                    else:
+                        msg = f"Mengunduh… {received // 1024} KB"
+                    write("download", pct if total else min(95, received // (256 * 1024)), msg, received, total)
+                    last_pct = pct
+                    last_t = now
+        if total and received < total:
+            sys.stderr.write(f"unduh tidak lengkap: {received}/{total}\n")
+            sys.exit(1)
+        write("download", 100, f"Unduhan selesai ({received // 1024} KB)", received, total or received)
+except Exception as e:
+    sys.stderr.write(f"{e}\n")
+    sys.exit(1)
+PY
+      then
+        ok=true
+      fi
+    elif have_cmd curl; then
+      # Tanpa percent halus — tetap update stage; curl --progress-bar sulit di-parse
+      write_progress "download" 5 "Mengunduh paket via curl…" 0 0
+      if curl -fsSL --connect-timeout 20 --max-time 300 --retry 3 --retry-delay 2 \
+        -A "$USER_AGENT" -o "$out" "$url" && [[ -s "$out" ]]; then
+        local sz
+        sz=$(wc -c <"$out" | tr -d ' ')
+        write_progress "download" 100 "Unduhan selesai ($((sz / 1024)) KB)" "$sz" "$sz"
+        ok=true
+      fi
+    elif have_cmd wget; then
+      write_progress "download" 5 "Mengunduh paket via wget…" 0 0
+      if wget -q --tries=3 --timeout=60 -U "$USER_AGENT" -O "$out" "$url" && [[ -s "$out" ]]; then
+        local sz
+        sz=$(wc -c <"$out" | tr -d ' ')
+        write_progress "download" 100 "Unduhan selesai ($((sz / 1024)) KB)" "$sz" "$sz"
+        ok=true
+      fi
+    fi
+
+    if [[ "$ok" == true && -s "$out" ]]; then
       return 0
     fi
     rm -f "$out"
-    if (( attempt == max )); then
-      return 1
-    fi
+    (( attempt == max )) && return 1
+    write_progress "download" 0 "Unduhan gagal, mencoba lagi…" 0 0
     sleep "$delay"
     delay=$((delay * 2))
     attempt=$((attempt + 1))
@@ -156,7 +274,6 @@ trap cleanup EXIT
 log "==> Cek release GitHub..."
 download "$API_URL" "$META_TMP" || fail "gagal unduh metadata GitHub (jaringan/rate-limit?)"
 
-# Deteksi respons error GitHub (rate limit / HTML)
 if grep -qiE '"message"[[:space:]]*:[[:space:]]*"(API rate limit|Not Found|Bad credentials)' "$META_TMP" 2>/dev/null; then
   msg="$(grep -oE '"message"[[:space:]]*:[[:space:]]*"[^"]+"' "$META_TMP" | head -1 | sed -E 's/.*"([^"]+)"[[:space:]]*$/\1/')"
   fail "GitHub API: ${msg:-error}"
@@ -194,7 +311,6 @@ print(tag.lstrip("vV"))
 print(url)
 PY
   )" || fail "gagal parse release (python) — cek metadata GitHub"
-  # Baca 3 baris hasil parse (hindari mapfile + process substitution yang menelan exit code)
   TAG="$(printf '%s\n' "$PARSE_OUT" | sed -n '1p')"
   REMOTE_VERSION="$(printf '%s\n' "$PARSE_OUT" | sed -n '2p')"
   DOWNLOAD_URL="$(printf '%s\n' "$PARSE_OUT" | sed -n '3p')"
@@ -208,6 +324,7 @@ fi
   || fail "gagal parse release (tag/url kosong — install python3 jika perlu)"
 
 log "==> Remote: $TAG"
+write_progress "check" 8 "Release $TAG ditemukan" 0 0
 
 LOCAL_VERSION=""
 if [[ -f "$VERSION_FILE" ]]; then
@@ -259,6 +376,7 @@ if [[ "$CHECK_ONLY" == true ]]; then
 fi
 
 if [[ "$NEED_UPDATE" != true ]]; then
+  write_progress "done" 100 "Sudah versi terbaru" 0 0
   if [[ "$IS_CGI" == true ]]; then
     cgi_json "200 OK" "true" "\"version\":\"$(json_escape "$LOCAL_VERSION")\",\"skipped\":true"
     exit 0
@@ -269,29 +387,79 @@ fi
 
 log "==> Download → $ZIP_FILE"
 rm -f "$ZIP_FILE"
-download "$DOWNLOAD_URL" "$ZIP_FILE" || fail "download zip gagal (jaringan/CDN GitHub)"
+download_zip "$DOWNLOAD_URL" "$ZIP_FILE" || fail "download zip gagal (jaringan/CDN GitHub)"
 [[ -s "$ZIP_FILE" ]] || fail "zip kosong"
 
 log "==> Extract..."
+write_progress "extract" 0 "Mengekstrak paket…" 0 0
 rm -rf "$EXTRACT_TMP"
 mkdir -p "$EXTRACT_TMP"
 
-if have_cmd unzip; then
-  unzip -tqq "$ZIP_FILE" >/dev/null 2>&1 || fail "zip rusak/tidak lengkap (coba lagi)"
-  unzip -o -q "$ZIP_FILE" -d "$EXTRACT_TMP" || fail "unzip gagal"
-elif have_cmd python3; then
-  python3 <<PY || fail "extract gagal"
-import zipfile, sys
-z = zipfile.ZipFile("$ZIP_FILE")
-bad = z.testzip()
-if bad is not None:
-    sys.stderr.write(f"zip rusak: {bad}\\n")
-    sys.exit(1)
-z.extractall("$EXTRACT_TMP")
+EXTRACT_OK=false
+EXTRACT_ERR=""
+
+if have_cmd python3; then
+  set +e
+  EXTRACT_ERR="$(
+    python3 - "$ZIP_FILE" "$EXTRACT_TMP" "$PROGRESS_FILE" <<'PY' 2>&1
+import json, os, sys, time, zipfile
+
+zip_path, dest, progress_path = sys.argv[1], sys.argv[2], sys.argv[3]
+
+def write(stage, percent, message):
+    payload = {
+        "stage": stage,
+        "percent": int(percent),
+        "message": message,
+        "bytesReceived": 0,
+        "bytesTotal": 0,
+        "updatedAt": int(time.time()),
+    }
+    tmp = progress_path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False)
+        f.write("\n")
+    os.replace(tmp, progress_path)
+
+write("extract", 5, "Memeriksa arsip…")
+with zipfile.ZipFile(zip_path) as z:
+    names = z.namelist()
+    total = max(len(names), 1)
+    for i, name in enumerate(names, 1):
+        z.extract(name, dest)
+        if i == 1 or i == total or i % 5 == 0:
+            pct = int(i * 100 / total)
+            write("extract", pct, f"Mengekstrak… {i}/{total}")
+write("extract", 100, "Ekstrak selesai")
 PY
-else
-  fail "butuh unzip atau python3"
+  )"
+  EXTRACT_RC=$?
+  set -e
+  if [[ "$EXTRACT_RC" -eq 0 ]]; then
+    EXTRACT_OK=true
+  else
+    log "python extract gagal: $EXTRACT_ERR"
+  fi
 fi
+
+if [[ "$EXTRACT_OK" != true ]] && have_cmd unzip; then
+  write_progress "extract" 15 "Mencoba unzip…" 0 0
+  set +e
+  unzip -o -q "$ZIP_FILE" -d "$EXTRACT_TMP" 2>/tmp/fo-unzip-err.$$
+  UNZIP_RC=$?
+  set -e
+  if [[ "$UNZIP_RC" -eq 0 ]]; then
+    EXTRACT_OK=true
+  else
+    EXTRACT_ERR="$(cat /tmp/fo-unzip-err.$$ 2>/dev/null || echo unzip gagal)"
+    log "unzip gagal: $EXTRACT_ERR"
+  fi
+  rm -f /tmp/fo-unzip-err.$$ 2>/dev/null || true
+fi
+
+[[ "$EXTRACT_OK" == true ]] || fail "extract gagal${EXTRACT_ERR:+: $EXTRACT_ERR}"
+
+write_progress "extract" 100 "Ekstrak selesai" 0 0
 
 if [[ ! -f "$EXTRACT_TMP/index.html" ]]; then
   nested="$(find "$EXTRACT_TMP" -mindepth 1 -maxdepth 1 -type d ! -name '__MACOSX' | head -n 1 || true)"
@@ -304,17 +472,19 @@ fi
 [[ -f "$EXTRACT_TMP/index.html" ]] || fail "zip tanpa index.html"
 
 log "==> Timpa file di $APP_DIR"
+write_progress "install" 40 "Memasang file…" 0 0
 shopt -s nullglob dotglob
 for item in ./*; do
   base="$(basename "$item")"
   case "$base" in
-    update.sh|update.php|.update-extract-tmp|.update.lock|fo-simulator-dist.zip) continue ;;
+    update.sh|update.php|.update-extract-tmp|.update.lock|.update-progress.json|.update-progress.json.tmp|fo-simulator-dist.zip) continue ;;
     .|..) continue ;;
   esac
   rm -rf "$item" || fail "gagal hapus $base (izin/file terkunci?)"
 done
 shopt -u nullglob dotglob
 
+write_progress "install" 70 "Menyalin file baru…" 0 0
 cp -a "$EXTRACT_TMP"/. ./ || fail "gagal menyalin file update"
 rm -rf "$EXTRACT_TMP"
 rm -f "$ZIP_FILE"
@@ -330,6 +500,7 @@ if have_cmd systemctl; then
   systemctl reload apache2 >/dev/null 2>&1 || systemctl reload httpd >/dev/null 2>&1 || true
 fi
 
+write_progress "done" 100 "Selesai v$REMOTE_VERSION" 0 0
 log "==> Selesai → v$REMOTE_VERSION"
 
 if [[ "$IS_CGI" == true ]]; then

@@ -1,15 +1,14 @@
 <?php
 /**
- * FO Simulator — trigger update.sh dari UI (tanpa ScriptAlias/CGI).
- * Letakkan sejajar index.html & update.sh.
+ * FO Simulator — update endpoint
  *
- * POST ./update.php
+ * GET  update.php  → baca progress (.update-progress.json)
+ * POST update.php  → jalankan update.sh --force
  */
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 header('Access-Control-Allow-Origin: *');
 
-// Unduh zip GitHub bisa >30s (default max_execution_time)
 @set_time_limit(0);
 @ini_set('max_execution_time', '0');
 ignore_user_abort(true);
@@ -21,14 +20,35 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     exit;
 }
 
+$dir = __DIR__;
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-if ($method !== 'POST' && $method !== 'GET') {
+
+if ($method === 'GET') {
+    $progressFile = $dir . DIRECTORY_SEPARATOR . '.update-progress.json';
+    if (is_file($progressFile)) {
+        $raw = (string) file_get_contents($progressFile);
+        $json = json_decode($raw, true);
+        if (is_array($json)) {
+            echo json_encode($json, JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+    echo json_encode([
+        'stage' => 'idle',
+        'percent' => 0,
+        'message' => '',
+        'bytesReceived' => 0,
+        'bytesTotal' => 0,
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if ($method !== 'POST') {
     http_response_code(405);
     echo json_encode(['ok' => false, 'error' => 'Method not allowed']);
     exit;
 }
 
-$dir = __DIR__;
 $script = $dir . DIRECTORY_SEPARATOR . 'update.sh';
 
 if (!is_file($script)) {
@@ -41,7 +61,6 @@ if (!is_executable($script)) {
     @chmod($script, 0755);
 }
 
-// Jangan wariskan REQUEST_METHOD ke bash (supaya update.sh mode CLI, bukan CGI)
 $cmd = sprintf(
     'cd %s && env -u REQUEST_METHOD -u GATEWAY_INTERFACE -u SCRIPT_FILENAME /bin/bash %s --force 2>&1',
     escapeshellarg($dir),

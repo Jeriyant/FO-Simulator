@@ -3,6 +3,7 @@ import { useI18n } from '../i18n/context'
 import {
   formatReleaseNotesPreview,
   type LatestReleaseInfo,
+  type UpdateProgress,
 } from '../utils/githubUpdate'
 import type { UpdateStatus } from '../hooks/useAppUpdate'
 import './UpdateBanner.css'
@@ -11,14 +12,39 @@ type Props = {
   latest: LatestReleaseInfo
   applying?: boolean
   error?: string | null
+  progress?: UpdateProgress | null
   onApply: () => void
   onDismiss: () => void
+}
+
+function ProgressBlock({ progress }: { progress: UpdateProgress }) {
+  const pct = Math.max(0, Math.min(100, Math.round(progress.percent || 0)))
+  return (
+    <div className="update-progress">
+      <div className="update-progress-row">
+        <span className="update-progress-msg">
+          {progress.message || '…'}
+        </span>
+        <span className="update-progress-pct">{pct}%</span>
+      </div>
+      <div
+        className="update-progress-bar"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={pct}
+      >
+        <div className="update-progress-fill" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  )
 }
 
 export function UpdateBanner({
   latest,
   applying = false,
   error = null,
+  progress = null,
   onApply,
   onDismiss,
 }: Props) {
@@ -29,9 +55,14 @@ export function UpdateBanner({
     <div className="update-banner" role="status">
       <div className="update-banner-text">
         <strong>{tf('updateAvailable', { version: latest.version })}</strong>
-        {notePreview ? <span className="update-banner-note">{notePreview}</span> : null}
+        {!applying && notePreview ? (
+          <span className="update-banner-note">{notePreview}</span>
+        ) : null}
+        {applying && progress ? <ProgressBlock progress={progress} /> : null}
+        {applying && !progress ? (
+          <span className="update-banner-note">{t('updateApplying')}</span>
+        ) : null}
         {error ? <span className="update-banner-error">{error}</span> : null}
-        {applying ? <span className="update-banner-note">{t('updateApplying')}</span> : null}
       </div>
       <div className="update-banner-actions">
         <button
@@ -79,6 +110,7 @@ type SettingsProps = {
   status: UpdateStatus
   latest: LatestReleaseInfo | null
   error: string | null
+  progress?: UpdateProgress | null
   onCheck: () => void
   onApply: () => void
 }
@@ -88,6 +120,7 @@ export function UpdateSettingsSection({
   status,
   latest,
   error,
+  progress = null,
   onCheck,
   onApply,
 }: SettingsProps) {
@@ -95,7 +128,8 @@ export function UpdateSettingsSection({
 
   let statusText = t('updateIdle')
   if (status === 'checking') statusText = t('updateChecking')
-  else if (status === 'applying') statusText = t('updateApplying')
+  else if (status === 'applying')
+    statusText = progress?.message || t('updateApplying')
   else if (status === 'upToDate') statusText = t('updateUpToDate')
   else if (status === 'available' && latest)
     statusText = tf('updateAvailable', { version: latest.version })
@@ -108,6 +142,9 @@ export function UpdateSettingsSection({
         {tf('updateCurrentVersion', { version: currentVersion })}
       </p>
       <div className="settings-static">{statusText}</div>
+      {status === 'applying' && progress ? (
+        <ProgressBlock progress={progress} />
+      ) : null}
       {error && status !== 'error' ? (
         <div className="settings-static update-banner-error">{error}</div>
       ) : null}
