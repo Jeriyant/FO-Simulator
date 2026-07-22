@@ -14,7 +14,7 @@ type FoBase = {
 export type DhcpServerConfig = {
   enabled: boolean
   /**
-   * Gateway + prefix CIDR, contoh: 192.168.88.1/24
+   * Gateway + prefix CIDR, contoh: 192.168.1.1/24
    * (network/gateway/subnetMask lama tetap dibaca saat migrasi)
    */
   cidr: string
@@ -193,14 +193,14 @@ export type PathResult = {
 
 export const DEFAULT_DHCP_SERVER: DhcpServerConfig = {
   enabled: true,
-  cidr: '192.168.88.1/24',
-  poolStart: '192.168.88.10',
-  poolEnd: '192.168.88.250',
+  cidr: '192.168.1.1/24',
+  poolStart: '192.168.1.2',
+  poolEnd: '192.168.1.254',
 }
 
 export const DEFAULT_INTERNET_DHCP: DhcpServerConfig = {
   enabled: true,
-  cidr: '10.0.0.1/24',
-  poolStart: '10.0.0.2',
-  poolEnd: '10.0.0.254',
+  cidr: '10.10.10.1/24',
+  poolStart: '10.10.10.2',
+  poolEnd: '10.10.10.254',
 }

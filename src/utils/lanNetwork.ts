@@ -9,7 +9,7 @@ import type {
   OnuData,
   SmartphoneData,
 } from '../types/fo'
-import { resolveDhcpCidr } from './cidr'
+import { resolveDhcpCidr, deriveDhcpPoolFromCidr } from './cidr'
 import { computeClientSpeedMbps } from './clientSpeed'
 import { isLanHandle, isLanOutputHandle } from './connectionHelpers'
 
@@ -25,42 +25,19 @@ function intToIp(n: number): string {
   return [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join('.')
 }
 
-function maskToInt(mask: string | undefined): number {
-  return ipToInt(mask?.trim() || '255.255.255.0') ?? 0xffffff00
-}
-
-/** Pool DHCP yang selalu berada di subnet gateway (clamp / auto-derive). */
+/** Pool DHCP dari gateway CIDR (.2–.254); nilai pool tersimpan di UI diabaikan. */
 export function resolveDhcpPool(dhcp: DhcpServerConfig): { start: number; end: number } | null {
   const resolved = resolveDhcpCidr(dhcp)
   if (!resolved) return null
   const gw = ipToInt(resolved.gateway)
   if (gw == null) return null
-  const mask = maskToInt(resolved.mask)
-  const network = (gw & mask) >>> 0
-  const broadcast = (network | (~mask >>> 0)) >>> 0
-  const hostMin = (network + 1) >>> 0
-  const hostMax = (broadcast - 1) >>> 0
-  if (hostMin > hostMax) return null
 
-  let start = ipToInt(dhcp.poolStart)
-  let end = ipToInt(dhcp.poolEnd)
-
-  const inSubnet = (n: number | null) =>
-    n != null && ((n & mask) >>> 0) === network && n !== gw && n >= hostMin && n <= hostMax
-
-  if (!inSubnet(start) || !inSubnet(end) || (end as number) < (start as number)) {
-    start = Math.min(hostMax, Math.max(hostMin, (network + 10) >>> 0))
-    end = Math.min(hostMax, Math.max(start, (network + 250) >>> 0))
-    if (start === gw) start = (start + 1) >>> 0
-    if (end < start) end = hostMax
-  } else {
-    start = start as number
-    end = end as number
-  }
-
-  if (start === gw) start = (start + 1) >>> 0
-  if (end === gw) end = (end - 1) >>> 0
-  if (start > end) return null
+  const pool = deriveDhcpPoolFromCidr(resolved.cidr)
+  if (!pool) return null
+  const start = ipToInt(pool.poolStart)
+  const end = ipToInt(pool.poolEnd)
+  if (start == null || end == null || start > end) return null
+  if (start === gw || end === gw) return null
   return { start, end }
 }
 
@@ -105,7 +82,8 @@ function isOnuType(data: FoNodeData): data is OnuData {
 
 function dhcpKey(dhcp: DhcpServerConfig): string {
   const r = resolveDhcpCidr(dhcp)
-  return `${r?.cidr ?? ''}|${dhcp.poolStart}|${dhcp.poolEnd}`
+  const pool = r ? deriveDhcpPoolFromCidr(r.cidr) : null
+  return `${r?.cidr ?? ''}|${pool?.poolStart ?? ''}|${pool?.poolEnd ?? ''}`
 }
 
 /** Cari Mikrotik lewat jalur LAN saja (bukan FO optik). */
@@ -402,7 +380,7 @@ export function analyzeLanNetwork(
           linkKind: 'wireless',
         },
         animated: false,
-        zIndex: 0,
+        zIndex: -1,
         className: 'fo-wireless-edge',
         style: { stroke: 'transparent', strokeWidth: 0 },
       })

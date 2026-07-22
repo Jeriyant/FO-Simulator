@@ -1366,43 +1366,22 @@
   }
 }
 
-/* Default: tanpa animasi (belum dapat IP) */
 .fo-wifi-arc {
-  animation: none;
+  animation: fo-wifi-pulse 1.1s ease-in-out infinite;
 }
 
 .fo-wifi-arc.static {
-  animation: none !important;
+  animation: none;
+  opacity: 0.55;
 }
 
 .fo-wifi-arc.dhcp {
   animation: fo-wifi-dhcp-pulse 0.75s ease-in-out infinite;
 }
 
-.fo-wireless-waves.is-wifi-only .fo-wifi-arc {
-  animation: none !important;
-}
-
-.fo-wireless-waves.is-dhcp .fo-wifi-label {
-  opacity: 1;
-}
-
-.fo-wifi-label {
-  pointer-events: none;
-  opacity: 0.85;
-}
-
-/* Gelombang WiFi di bawah node & tali lain */
+/* Gelombang WiFi: gambar di paling bawah dalam layer edges */
 .react-flow__edge.fo-wireless-edge {
   z-index: 0 !important;
-}
-
-.react-flow__nodes {
-  z-index: 2;
-}
-
-.react-flow__edges {
-  z-index: 1;
 }
 
 @keyframes fo-online-blink {

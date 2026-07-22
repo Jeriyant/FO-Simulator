@@ -152,7 +152,8 @@ function intToIp(n: number): string {
 
 /**
  * Turunkan pool DHCP dari gateway CIDR.
- * Contoh: 192.168.2.1/24 → 192.168.2.10 … 192.168.2.250
+ * Contoh: 192.168.1.1/24 → 192.168.1.2 … 192.168.1.254
+ * Pool selalu .2–.254 (atau hostMin+1 … hostMax), gateway dikecualikan.
  */
 export function deriveDhcpPoolFromCidr(cidr: string): { poolStart: string; poolEnd: string } | null {
   const parsed = parseCidr(cidr)
@@ -167,8 +168,9 @@ export function deriveDhcpPoolFromCidr(cidr: string): { poolStart: string; poolE
   const hostMax = (broadcast - 1) >>> 0
   if (hostMin > hostMax) return null
 
-  let start = Math.min(hostMax, Math.max(hostMin, (network + 10) >>> 0))
-  let end = Math.min(hostMax, Math.max(start, (network + 250) >>> 0))
+  // Mulai dari .2 (network+2), sampai host terakhir (.254 pada /24)
+  let start = Math.min(hostMax, Math.max(hostMin, (network + 2) >>> 0))
+  let end = hostMax
 
   if (start === gw) start = (start + 1) >>> 0
   if (end === gw) end = (end - 1) >>> 0

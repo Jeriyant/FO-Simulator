@@ -391,21 +391,6 @@ export function PropertiesPanel({ node, allLabels, settings, onChange, onDelete,
               }}
             />
           </label>
-          {(
-            [
-              ['poolStart', 'propDhcpPoolStart'],
-              ['poolEnd', 'propDhcpPoolEnd'],
-            ] as const
-          ).map(([key, labelKey]) => (
-            <label key={key} className="prop-field">
-              <span>{t(labelKey)}</span>
-              <input
-                value={draft.dhcpServer?.[key] ?? ''}
-                readOnly
-                title={t('propDhcpPoolAuto')}
-              />
-            </label>
-          ))}
         </>
       ) : null}
 

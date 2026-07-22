@@ -92,13 +92,13 @@
   stroke-linecap: round;
 }
 
-/* Tali di atas box komponen agar tidak tertutup node */
+/* Node di atas tali (termasuk gelombang WiFi) agar tidak tertutup edge */
 .react-flow__renderer .react-flow__edges {
-  z-index: 4;
+  z-index: 3;
 }
 
 .react-flow__renderer .react-flow__nodes {
-  z-index: 3;
+  z-index: 4;
 }
 
 .react-flow__nodesselection-rect {

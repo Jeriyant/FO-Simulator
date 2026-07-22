@@ -786,7 +786,7 @@ function SimulatorCanvas({
           data: { ...edgeData, linkKind: 'wireless' as const },
           // Animasi RF dimatikan; pulse CSS hanya saat sudah dapat IP (di FoWirelessEdge)
           animated: false,
-          zIndex: 0,
+          zIndex: -1,
           className: 'fo-wireless-edge',
           reconnectable: false,
           label: undefined,

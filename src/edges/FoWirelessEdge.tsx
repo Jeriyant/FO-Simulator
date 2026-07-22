@@ -4,7 +4,7 @@ import type { FoEdgeData, FoNodeData } from '../types/fo'
 /**
  * Koneksi WiFi visual: gelombang ) ) ) antara ONU ↔ Smartphone.
  * Semakin jauh → semakin padat.
- * Animasi hanya jika smartphone sudah dapat IP (DHCP); tanpa IP → statis.
+ * Animasi (dhcp pulse) hanya jika sudah dapat IP; tanpa IP → statis.
  */
 export function FoWirelessEdge({
   id,
@@ -22,15 +22,11 @@ export function FoWirelessEdge({
     Boolean(td.online) &&
     Boolean(String(td.ipAddress ?? '').trim())
 
-  const mx = (sourceX + targetX) / 2
-  const my = (sourceY + targetY) / 2
   const dx = targetX - sourceX
   const dy = targetY - sourceY
   const len = Math.hypot(dx, dy) || 1
   const ux = dx / len
   const uy = dy / len
-  const px = -uy
-  const py = ux
 
   const spacing = Math.max(5, 17 - len * 0.03)
   const usable = len * 0.8
@@ -61,9 +57,6 @@ export function FoWirelessEdge({
     }
   })
 
-  const labelX = mx + px * 12
-  const labelY = my + py * 12
-
   return (
     <g
       className={`fo-wireless-waves ${hasIp ? 'is-dhcp' : 'is-wifi-only'}`}
@@ -82,19 +75,6 @@ export function FoWirelessEdge({
           style={hasIp ? { animationDelay: `${arc.delay}s` } : undefined}
         />
       ))}
-      <text
-        x={labelX}
-        y={labelY}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        className="fo-wifi-label"
-        fill={hasIp ? '#0369a1' : '#7c3aed'}
-        fontSize={9}
-        fontWeight={700}
-        fontFamily="IBM Plex Sans, sans-serif"
-      >
-        WiFi
-      </text>
     </g>
   )
 }
