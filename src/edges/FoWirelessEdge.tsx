@@ -2,7 +2,8 @@ import { useNodes, type Edge, type EdgeProps } from '@xyflow/react'
 import type { FoEdgeData, FoNodeData } from '../types/fo'
 
 /**
- * Koneksi WiFi visual: gelombang ) ) ) ) padat antara ONU ↔ Smartphone.
+ * Koneksi WiFi visual: gelombang ) ) ) antara ONU ↔ Smartphone.
+ * Semakin jauh jaraknya → semakin banyak & padat gelombangnya.
  * Animasi lebih hidup jika smartphone sudah dapat DHCP Mikrotik.
  */
 export function FoWirelessEdge({
@@ -28,12 +29,21 @@ export function FoWirelessEdge({
   const px = -uy
   const py = ux
 
-  // Lebih banyak busur (padat): 8 gelombang
-  const arcs = Array.from({ length: 8 }, (_, i) => {
-    const t = 0.12 + i * 0.1
+  // Jarak jauh → spacing mengecil + jumlah busur naik (gelombang lebih padat)
+  const spacing = Math.max(5, 17 - len * 0.03)
+  const usable = len * 0.8
+  const count = Math.max(6, Math.min(30, Math.round(usable / spacing)))
+
+  const startT = 0.08
+  const endT = 0.92
+  const radiusStep = Math.max(1.2, 3.2 - len * 0.0045)
+
+  const arcs = Array.from({ length: count }, (_, i) => {
+    const t =
+      count <= 1 ? 0.5 : startT + ((endT - startT) * i) / (count - 1)
     const cx = sourceX + dx * t
     const cy = sourceY + dy * t
-    const r = 7 + i * 3.2
+    const r = 5 + i * radiusStep
     const a0 = Math.atan2(uy, ux) - Math.PI / 2.35
     const a1 = Math.atan2(uy, ux) + Math.PI / 2.35
     const x1 = cx + Math.cos(a0) * r
@@ -42,8 +52,8 @@ export function FoWirelessEdge({
     const y2 = cy + Math.sin(a1) * r
     return {
       d: `M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}`,
-      delay: i * 0.08,
-      opacity: 0.35 + i * 0.08,
+      delay: (i / count) * 0.55,
+      opacity: 0.3 + (i / Math.max(count - 1, 1)) * 0.5,
     }
   })
 
@@ -61,7 +71,7 @@ export function FoWirelessEdge({
           d={arc.d}
           fill="none"
           stroke={dhcpOk ? '#0284c7' : '#a78bfa'}
-          strokeWidth={dhcpOk ? 2.6 : 2.2}
+          strokeWidth={dhcpOk ? 2.4 : 2}
           strokeLinecap="round"
           opacity={arc.opacity}
           className={`fo-wifi-arc ${dhcpOk ? 'dhcp' : 'static'}`}

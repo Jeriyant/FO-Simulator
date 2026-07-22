@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   Radio,
   GitFork,
-  Box,
+  Boxes,
   Cable,
   Link2,
   CircleDot,
@@ -27,19 +27,19 @@ import type { TranslationKey } from '../i18n/translations'
 import './Sidebar.css'
 
 const ICONS: Record<ComponentType, ReactNode> = {
-  olt: <Radio size={18} />,
-  splitterRatio: <GitFork size={18} />,
-  splitterBox: <Box size={18} />,
-  patchcord: <Cable size={18} />,
-  connector: <Link2 size={18} />,
-  barrel: <CircleDot size={18} />,
-  opm: <Gauge size={18} />,
-  onu: <Router size={18} />,
-  onuDual: <Wifi size={18} />,
-  internet: <Cloud size={18} />,
-  mikrotik: <Cpu size={18} />,
-  smartphone: <Smartphone size={18} />,
-  komputer: <Monitor size={18} />,
+  olt: <Radio size={16} strokeWidth={2.4} />,
+  splitterRatio: <GitFork size={16} strokeWidth={2.4} />,
+  splitterBox: <Boxes size={16} strokeWidth={2.4} />,
+  patchcord: <Cable size={16} strokeWidth={2.4} />,
+  connector: <Link2 size={16} strokeWidth={2.4} />,
+  barrel: <CircleDot size={16} strokeWidth={2.4} />,
+  opm: <Gauge size={16} strokeWidth={2.4} />,
+  onu: <Router size={16} strokeWidth={2.4} />,
+  onuDual: <Wifi size={16} strokeWidth={2.4} />,
+  internet: <Cloud size={16} strokeWidth={2.4} />,
+  mikrotik: <Cpu size={16} strokeWidth={2.4} />,
+  smartphone: <Smartphone size={16} strokeWidth={2.4} />,
+  komputer: <Monitor size={16} strokeWidth={2.4} />,
 }
 
 const ORDER: ComponentType[] = [
