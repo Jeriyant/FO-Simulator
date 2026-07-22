@@ -74,6 +74,7 @@
 }
 
 .app-version {
+  appearance: none;
   font-size: 10px;
   font-family: 'IBM Plex Sans', sans-serif;
   font-weight: 700;
@@ -88,6 +89,31 @@
   max-width: none;
   overflow: visible;
   text-overflow: clip;
+  cursor: pointer;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+}
+
+.app-version:hover {
+  color: var(--fo-chrome-text);
+  border-color: var(--fo-chrome-muted);
+}
+
+.app-version.has-update {
+  color: #0f766e;
+  border-color: color-mix(in srgb, #0f766e 45%, transparent);
+  background: color-mix(in srgb, #0f766e 12%, transparent);
+}
+
+.app-version-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #0f766e;
+  flex-shrink: 0;
 }
 
 .components-btn {

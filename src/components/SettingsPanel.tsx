@@ -18,6 +18,9 @@ import {
 } from '../settings/types'
 import type { ThemeMode } from '../theme'
 import { CurrencyInput } from './CurrencyInput'
+import { UpdateSettingsSection } from './UpdateBanner'
+import type { AppUpdateState } from '../hooks/useAppUpdate'
+import { APP_VERSION } from '../version'
 
 type Props = {
   settings: AppSettings
@@ -25,6 +28,7 @@ type Props = {
   onThemeChange: (theme: ThemeMode) => void
   onSave: (next: AppSettings) => void
   onClose: () => void
+  update?: AppUpdateState
 }
 
 const EDGE_STYLE_KEYS: Record<EdgePathStyle, TranslationKey> = {
@@ -120,7 +124,14 @@ function StatusThresholdFields({
   )
 }
 
-export function SettingsPanel({ settings, theme, onThemeChange, onSave, onClose }: Props) {
+export function SettingsPanel({
+  settings,
+  theme,
+  onThemeChange,
+  onSave,
+  onClose,
+  update,
+}: Props) {
   const { locale, setLocale, t, tf } = useI18n()
   const [draft, setDraft] = useState<AppSettings>(() => structuredClone(settings))
 
@@ -238,6 +249,18 @@ export function SettingsPanel({ settings, theme, onThemeChange, onSave, onClose 
           </select>
         </label>
       </section>
+
+      {update ? (
+        <UpdateSettingsSection
+          currentVersion={APP_VERSION}
+          status={update.status}
+          latest={update.latest}
+          error={update.error}
+          onCheck={() => {
+            void update.checkNow()
+          }}
+        />
+      ) : null}
 
       <section className="settings-section">
         <h3>{t('settingsDefaults')}</h3>

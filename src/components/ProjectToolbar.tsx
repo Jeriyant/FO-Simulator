@@ -39,6 +39,8 @@ type Props = {
   onOpenOnuLossReport: () => void
   onToggleSidebar?: () => void
   onOpenQuick?: () => void
+  updateAvailable?: boolean
+  onVersionClick?: () => void
 }
 
 export function ProjectToolbar({
@@ -60,6 +62,8 @@ export function ProjectToolbar({
   onOpenOnuLossReport,
   onToggleSidebar,
   onOpenQuick,
+  updateAvailable = false,
+  onVersionClick,
 }: Props) {
   const { t } = useI18n()
   const [fileOpen, setFileOpen] = useState(false)
@@ -101,9 +105,19 @@ export function ProjectToolbar({
           <div className="toolbar-brand-text">
             <strong>
               {t('sidebarTitle')}
-              <span className="app-version" title={`v${APP_VERSION}`}>
+              <button
+                type="button"
+                className={`app-version${updateAvailable ? ' has-update' : ''}`}
+                title={
+                  updateAvailable
+                    ? t('updateCheckNow')
+                    : `v${APP_VERSION}`
+                }
+                onClick={onVersionClick}
+              >
                 v{APP_VERSION}
-              </span>
+                {updateAvailable ? <span className="app-version-dot" aria-hidden="true" /> : null}
+              </button>
             </strong>
             <span>{t('sidebarSubtitle')}</span>
           </div>

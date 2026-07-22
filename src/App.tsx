@@ -53,6 +53,8 @@ import { SettingsPanel } from './components/SettingsPanel'
 import { ReportPanel } from './components/ReportPanel'
 import { QuickPanel } from './components/QuickPanel'
 import { ZoomControls } from './components/ZoomControls'
+import { UpdateBanner } from './components/UpdateBanner'
+import { useAppUpdate } from './hooks/useAppUpdate'
 import { CanvasErrorBoundary } from './components/CanvasErrorBoundary'
 import { useMediaQuery } from './hooks/useMediaQuery'
 import { foEdgeTypes, edgeTypeFromStyle, connectionLineTypeFromStyle, setActiveEdgePathStyle } from './edges'
@@ -167,6 +169,7 @@ function SimulatorCanvas({
   const [showSettingsPanel, setShowSettingsPanel] = useState(false)
   const [showQuickPanel, setShowQuickPanel] = useState(false)
   const [report, setReport] = useState<FoReport | null>(null)
+  const appUpdate = useAppUpdate()
   const [appSettings, setAppSettings] = useState<AppSettings>(() => loadSettings())
   const [panelMode, setPanelMode] = useState<'node' | 'edge'>('node')
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null)
@@ -1715,6 +1718,14 @@ function SimulatorCanvas({
           setReport(null)
           if (isMobile) setSidebarOpen(false)
         }}
+        updateAvailable={appUpdate.showBanner || appUpdate.status === 'available'}
+        onVersionClick={() => {
+          void appUpdate.checkNow()
+          setShowSettingsPanel(true)
+          setShowPropertiesPanel(false)
+          setReport(null)
+          if (isMobile) setSidebarOpen(false)
+        }}
       />
 
       <div className="app-body">
@@ -1738,6 +1749,10 @@ function SimulatorCanvas({
           hidden
           onChange={onProjectFileSelected}
         />
+
+        {appUpdate.showBanner && appUpdate.latest ? (
+          <UpdateBanner latest={appUpdate.latest} onDismiss={appUpdate.dismiss} />
+        ) : null}
 
         <div
           className="canvas-wrap"
@@ -1892,6 +1907,7 @@ function SimulatorCanvas({
               onThemeChange={onThemeChange}
               onSave={updateAppSettings}
               onClose={() => setShowSettingsPanel(false)}
+              update={appUpdate}
             />
         </div>
         </div>
