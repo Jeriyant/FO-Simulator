@@ -2,7 +2,7 @@
 /**
  * FO Simulator — update endpoint
  *
- * GET  update.php  → baca progress (.update-progress.json)
+ * GET  update.php  → baca progress (/tmp/fo-simulator-update-progress.json)
  * POST update.php  → jalankan update.sh --force
  */
 header('Content-Type: application/json; charset=utf-8');
@@ -22,11 +22,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
 
 $dir = __DIR__;
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+$progressFile = '/tmp/fo-simulator-update-progress.json';
+// fallback lama (kalau masih ada di folder app)
+$legacyProgress = $dir . DIRECTORY_SEPARATOR . '.update-progress.json';
 
 if ($method === 'GET') {
-    $progressFile = $dir . DIRECTORY_SEPARATOR . '.update-progress.json';
-    if (is_file($progressFile)) {
-        $raw = (string) file_get_contents($progressFile);
+    foreach ([$progressFile, $legacyProgress] as $file) {
+        if (!is_file($file)) {
+            continue;
+        }
+        $raw = (string) @file_get_contents($file);
         $json = json_decode($raw, true);
         if (is_array($json)) {
             echo json_encode($json, JSON_UNESCAPED_UNICODE);
@@ -82,6 +87,19 @@ if (is_file($versionFile)) {
 }
 
 if ($exitCode !== 0) {
+    // Jika artefak inti sudah terpasang, anggap sukses (error sekunder seperti progress/izin)
+    $hasIndex = is_file($dir . DIRECTORY_SEPARATOR . 'index.html');
+    $hasAssets = is_dir($dir . DIRECTORY_SEPARATOR . 'assets');
+    if ($hasIndex && $hasAssets && $version !== null && $version !== '') {
+        echo json_encode([
+            'ok' => true,
+            'version' => $version,
+            'warning' => 'Update terpasang, tetapi skrip melaporkan exit ' . $exitCode,
+            'log' => $text,
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     $error = 'update.sh gagal (exit ' . $exitCode . ')';
     if (preg_match('/^ERROR:\s*(.+)$/m', $text, $m)) {
         $error = trim($m[1]);

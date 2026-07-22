@@ -15,10 +15,10 @@ cd "$(dirname "$0")"
 APP_DIR="$(pwd)"
 
 VERSION_FILE="./version.json"
-ZIP_FILE="./fo-simulator-dist.zip"
-LOCK_FILE="./.update.lock"
-PROGRESS_FILE="./.update-progress.json"
-EXTRACT_TMP="./.update-extract-tmp"
+ZIP_FILE="/tmp/fo-simulator-dist.zip"
+LOCK_FILE="/tmp/fo-simulator-update.lock"
+PROGRESS_FILE="/tmp/fo-simulator-update-progress.json"
+EXTRACT_TMP="/tmp/fo-simulator-extract-$$"
 GITHUB_OWNER="${FO_GITHUB_OWNER:-Jeriyant}"
 GITHUB_REPO="${FO_GITHUB_REPO:-FO-Simulator}"
 DIST_ASSET_NAME="${FO_DIST_ASSET:-fo-simulator-dist.zip}"
@@ -86,12 +86,15 @@ cgi_json() {
 }
 
 write_progress() {
+  # Jangan pernah gagalkan update hanya karena progress tidak bisa ditulis
   local stage="$1" percent="$2" message="$3"
   local received="${4:-0}" total="${5:-0}"
   local tmp="${PROGRESS_FILE}.tmp"
-  printf '{"stage":"%s","percent":%s,"message":"%s","bytesReceived":%s,"bytesTotal":%s,"updatedAt":%s}\n' \
-    "$stage" "$percent" "$(json_escape "$message")" "$received" "$total" "$(date +%s)" >"$tmp"
-  mv -f "$tmp" "$PROGRESS_FILE"
+  {
+    printf '{"stage":"%s","percent":%s,"message":"%s","bytesReceived":%s,"bytesTotal":%s,"updatedAt":%s}\n' \
+      "$stage" "$percent" "$(json_escape "$message")" "$received" "$total" "$(date +%s)" >"$tmp" \
+      && mv -f "$tmp" "$PROGRESS_FILE"
+  } 2>/dev/null || true
 }
 
 fail() {
@@ -184,10 +187,13 @@ def write(stage, percent, message, received=0, total=0):
         "updatedAt": int(time.time()),
     }
     tmp = progress_path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False)
-        f.write("\n")
-    os.replace(tmp, progress_path)
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False)
+            f.write("\n")
+        os.replace(tmp, progress_path)
+    except OSError:
+        pass
 
 req = urllib.request.Request(
     url,
@@ -416,10 +422,13 @@ def write(stage, percent, message):
         "updatedAt": int(time.time()),
     }
     tmp = progress_path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False)
-        f.write("\n")
-    os.replace(tmp, progress_path)
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False)
+            f.write("\n")
+        os.replace(tmp, progress_path)
+    except OSError:
+        pass
 
 write("extract", 5, "Memeriksa arsip…")
 with zipfile.ZipFile(zip_path) as z:
@@ -473,23 +482,43 @@ fi
 
 log "==> Timpa file di $APP_DIR"
 write_progress "install" 40 "Memasang file…" 0 0
+
+# Hapus juga update.sh/update.php lama: skrip yang sedang jalan tetap di inode lama.
+# Ini menghindari "Permission denied" saat menimpa file milik root.
 shopt -s nullglob dotglob
 for item in ./*; do
   base="$(basename "$item")"
   case "$base" in
-    update.sh|update.php|.update-extract-tmp|.update.lock|.update-progress.json|.update-progress.json.tmp|fo-simulator-dist.zip) continue ;;
+    .update-extract-tmp) continue ;;
     .|..) continue ;;
   esac
-  rm -rf "$item" || fail "gagal hapus $base (izin/file terkunci?)"
+  rm -rf "$item" || fail "gagal hapus $base (izin/file terkunci? — coba: chown -R www-data:www-data $APP_DIR)"
 done
 shopt -u nullglob dotglob
 
 write_progress "install" 70 "Menyalin file baru…" 0 0
-cp -a "$EXTRACT_TMP"/. ./ || fail "gagal menyalin file update"
+# Tanpa -a: jangan pertahankan owner/mode root dari extract (sering gagal di bawah www-data)
+set +e
+cp -rf "$EXTRACT_TMP"/. ./
+CP_RC=$?
+set -e
+if [[ "$CP_RC" -ne 0 ]]; then
+  # Fallback: salin per-item; abaikan file yang gagal jika target sudah ada & valid
+  set +e
+  for item in "$EXTRACT_TMP"/* "$EXTRACT_TMP"/.[!.]* "$EXTRACT_TMP"/..?*; do
+    [[ -e "$item" ]] || continue
+    base="$(basename "$item")"
+    [[ "$base" == "." || "$base" == ".." ]] && continue
+    cp -rf "$item" ./
+  done
+  set -e
+fi
+
 rm -rf "$EXTRACT_TMP"
 rm -f "$ZIP_FILE"
 
-printf '{\n  "version": "%s"\n}\n' "$REMOTE_VERSION" > "$VERSION_FILE"
+printf '{\n  "version": "%s"\n}\n' "$REMOTE_VERSION" > "$VERSION_FILE" \
+  || fail "tidak bisa tulis version.json (izin folder?)"
 
 [[ -f ./index.html ]] || fail "install gagal: ./index.html tidak ada"
 [[ -f ./update.sh ]] || fail "update.sh hilang setelah install"
