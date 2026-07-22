@@ -330,13 +330,13 @@ export const translations = {
     updateApplying: 'Memasang update…',
     updateCopyCommand: 'Salin perintah',
     updateCommandCopied: 'Tersalin',
-    updateScriptHint: 'Di server, jalankan script di folder aplikasi (sejajar dist):',
+    updateScriptHint: 'Di server, jalankan di folder aplikasi (tempat index.html & version.json):',
     updateLater: 'Nanti',
     updateViewRelease: 'Lihat release',
     updateNoAsset: 'File dist.zip belum ada di release. Buka halaman release di GitHub.',
     updateCheckFailed: 'Gagal memeriksa update dari GitHub.',
     updateBackendHint:
-      'Update production: jalankan ./update.sh di folder aplikasi (satu level dengan dist). Script akan unduh zip dari GitHub dan menimpa dist/.',
+      'Update production: di folder web (ada index.html, version.json, update.sh) jalankan ./update.sh. Script unduh zip dari GitHub dan menimpa file di folder itu.',
   },
   en: {
     untitledProject: 'Untitled Project',
@@ -667,13 +667,13 @@ export const translations = {
     updateApplying: 'Installing update…',
     updateCopyCommand: 'Copy command',
     updateCommandCopied: 'Copied',
-    updateScriptHint: 'On the server, run the script in the app folder (next to dist):',
+    updateScriptHint: 'On the server, run it in the app folder (where index.html & version.json live):',
     updateLater: 'Later',
     updateViewRelease: 'View release',
     updateNoAsset: 'dist.zip is not attached to the release yet. Open the GitHub release page.',
     updateCheckFailed: 'Failed to check for updates on GitHub.',
     updateBackendHint:
-      'Production update: run ./update.sh in the app folder (sibling of dist). It downloads the zip from GitHub and overwrites dist/.',
+      'Production update: in the web folder (index.html, version.json, update.sh) run ./update.sh. It downloads the zip from GitHub and overwrites files there.',
   },
 } as const
 

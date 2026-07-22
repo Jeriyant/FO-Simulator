@@ -1,224 +1,244 @@
 #!/usr/bin/env bash
-# FO Simulator production updater.
-# Lives next to dist/:
-#   app/
-#     dist/
+# FO Simulator production updater
+#
+# Satu paket dengan index.html:
+#   /var/www/html/FO-Simulator/
+#     index.html
+#     assets/
+#     version.json
 #     update.sh
+#     ...
 #
-# Usage:
-#   ./update.sh              # download latest GitHub release zip → overwrite dist/
-#   ./update.sh --check      # exit 0 if a newer release exists (needs CURRENT_VERSION)
-#
-# Env (optional):
-#   FO_DIST_DIR, FO_GITHUB_OWNER, FO_GITHUB_REPO, FO_DIST_ASSET, FO_CURRENT_VERSION
+#   cd /var/www/html/FO-Simulator && ./update.sh
+#   ./update.sh --force
+#   ./update.sh --check
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP_ROOT="$SCRIPT_DIR"
-DIST_DIR="${FO_DIST_DIR:-$APP_ROOT/dist}"
+cd "$(dirname "$0")"
+APP_DIR="$(pwd)"
+
+VERSION_FILE="./version.json"
+ZIP_FILE="./fo-simulator-dist.zip"
 GITHUB_OWNER="${FO_GITHUB_OWNER:-Jeriyant}"
 GITHUB_REPO="${FO_GITHUB_REPO:-FO-Simulator}"
 DIST_ASSET_NAME="${FO_DIST_ASSET:-fo-simulator-dist.zip}"
 API_URL="https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest"
-CHECK_ONLY=false
 
+FORCE=false
+CHECK_ONLY=false
 for arg in "$@"; do
   case "$arg" in
+    --force|-f) FORCE=true ;;
     --check) CHECK_ONLY=true ;;
     -h|--help)
-      sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
+      cat <<'EOF'
+  cd /var/www/html/FO-Simulator
+  ./update.sh           # unduh zip → timpa file di folder ini (./)
+  ./update.sh --force   # paksa timpa meski versi sama
+  ./update.sh --check   # cek saja
+EOF
       exit 0
       ;;
   esac
 done
 
-fail() {
-  echo "ERROR: $*" >&2
-  exit 1
+fail() { echo "ERROR: $*" >&2; exit 1; }
+have_cmd() { command -v "$1" >/dev/null 2>&1; }
+
+echo "==> App dir: $APP_DIR"
+echo "==> Install: ./  (sejajar update.sh, bukan ./dist)"
+
+have_cmd curl || have_cmd wget || fail "butuh curl atau wget"
+
+download() {
+  local url="$1" out="$2"
+  if have_cmd curl; then
+    curl -fsSL --retry 3 --retry-delay 1 -o "$out" "$url"
+  else
+    wget -q -O "$out" "$url"
+  fi
 }
 
-command -v python3 >/dev/null 2>&1 || fail "python3 is required"
-
-read_local_version() {
-  if [[ -n "${FO_CURRENT_VERSION:-}" ]]; then
-    printf '%s' "$FO_CURRENT_VERSION"
-    return
-  fi
-  if [[ -f "$DIST_DIR/version.json" ]]; then
-    python3 - "$DIST_DIR/version.json" <<'PY'
-import json, sys
-with open(sys.argv[1], encoding="utf-8") as f:
-    print((json.load(f).get("version") or "").strip())
-PY
-    return
-  fi
-  printf ''
+# --- metadata GitHub ---
+echo "==> Cek release GitHub..."
+META_TMP="$(mktemp)"
+cleanup() {
+  rm -f "$META_TMP" "$ZIP_FILE" 2>/dev/null || true
+  rm -rf ./.update-extract-tmp 2>/dev/null || true
 }
-
-TMP_DIR="$(mktemp -d)"
-cleanup() { rm -rf "$TMP_DIR"; }
 trap cleanup EXIT
 
-echo "==> Fetching latest release from GitHub (${GITHUB_OWNER}/${GITHUB_REPO})"
-META_FILE="$TMP_DIR/release.json"
-python3 - "$API_URL" "$META_FILE" <<'PY' || fail "GitHub API request failed"
-import sys, urllib.request
-url, out = sys.argv[1], sys.argv[2]
-req = urllib.request.Request(
-    url,
-    headers={
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "FO-Simulator-Updater",
-    },
-)
-with urllib.request.urlopen(req, timeout=60) as res, open(out, "wb") as f:
-    f.write(res.read())
-PY
+download "$API_URL" "$META_TMP" || fail "gagal unduh metadata GitHub"
 
-mapfile -t RELEASE_INFO < <(
-  python3 - "$META_FILE" "$DIST_ASSET_NAME" <<'PY'
+if have_cmd python3; then
+  mapfile -t RELEASE_INFO < <(
+    python3 - "$META_TMP" "$DIST_ASSET_NAME" <<'PY'
 import json, sys
-path, asset_name = sys.argv[1], sys.argv[2]
-with open(path, encoding="utf-8") as f:
+with open(sys.argv[1], encoding="utf-8") as f:
     data = json.load(f)
 tag = (data.get("tag_name") or "").strip()
 if not tag:
-    raise SystemExit("missing tag_name")
-assets = data.get("assets") or []
+    raise SystemExit("tag kosong")
 url = ""
-for a in assets:
-    if a.get("name") == asset_name:
+for a in data.get("assets") or []:
+    if a.get("name") == sys.argv[2]:
         url = a.get("browser_download_url") or ""
         break
 if not url:
-    for a in assets:
-        name = (a.get("name") or "").lower()
-        if name.endswith(".zip"):
+    for a in data.get("assets") or []:
+        if (a.get("name") or "").lower().endswith(".zip"):
             url = a.get("browser_download_url") or ""
             break
 if not url:
-    raise SystemExit("dist zip asset not found on release")
+    raise SystemExit("zip asset tidak ada")
 print(tag)
 print(tag.lstrip("vV"))
 print(url)
 PY
-) || fail "Failed to parse GitHub release metadata"
-
-TAG="${RELEASE_INFO[0]}"
-VERSION="${RELEASE_INFO[1]}"
-DOWNLOAD_URL="${RELEASE_INFO[2]}"
-LOCAL_VERSION="$(read_local_version)"
-
-echo "==> Latest release: $TAG"
-if [[ -n "$LOCAL_VERSION" ]]; then
-  echo "==> Local version:  v$LOCAL_VERSION"
+  ) || fail "gagal parse release (python)"
+else
+  TAG="$(grep -oE '"tag_name"[[:space:]]*:[[:space:]]*"[^"]+"' "$META_TMP" | head -1 | sed -E 's/.*"([^"]+)"[[:space:]]*$/\1/')"
+  DOWNLOAD_URL="$(grep -oE "\"browser_download_url\"[[:space:]]*:[[:space:]]*\"[^\"]+${DIST_ASSET_NAME}\"" "$META_TMP" | head -1 | sed -E 's/.*"([^"]+)"[[:space:]]*$/\1/')"
+  [[ -n "$TAG" && -n "$DOWNLOAD_URL" ]] || fail "gagal parse release (install python3)"
+  RELEASE_INFO=("$TAG" "${TAG#v}" "$DOWNLOAD_URL")
 fi
 
-NEWER="$(
-  python3 - "$VERSION" "${LOCAL_VERSION:-}" <<'PY'
-import sys
-remote = (sys.argv[1] or "").strip().lstrip("vV")
-local = (sys.argv[2] or "").strip().lstrip("vV")
-if not local:
-    print(1)
-    raise SystemExit
-def nums(v: str):
-    return [int(p) if p.isdigit() else 0 for p in v.replace("-", ".").replace("+", ".").split(".") if p != ""]
-ra, rb = nums(remote), nums(local)
-n = max(len(ra), len(rb))
-ra += [0] * (n - len(ra))
-rb += [0] * (n - len(rb))
-for a, b in zip(ra, rb):
-    if a != b:
-        print(1 if a > b else 0)
-        raise SystemExit
-print(0)
-PY
-)"
+TAG="${RELEASE_INFO[0]}"
+REMOTE_VERSION="${RELEASE_INFO[1]}"
+DOWNLOAD_URL="${RELEASE_INFO[2]}"
+
+echo "==> Remote : $TAG  (parsed=$REMOTE_VERSION)"
+echo "==> Zip    : $DOWNLOAD_URL"
+
+# --- LOCAL dari ./version.json ---
+LOCAL_VERSION=""
+echo "==> Local file: $APP_DIR/version.json"
+if [[ -f "$VERSION_FILE" ]]; then
+  echo "==> Local raw :"
+  cat "$VERSION_FILE"
+  echo
+  LOCAL_VERSION="$(
+    tr -d '\r' < "$VERSION_FILE" \
+      | grep -oE '"version"[[:space:]]*:[[:space:]]*"[^"]+"' \
+      | head -1 \
+      | sed -E 's/.*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/' \
+      | tr -d '[:space:]'
+  )"
+else
+  echo "==> Local raw : (file tidak ada)"
+fi
+
+if [[ -n "$LOCAL_VERSION" ]]; then
+  echo "==> Local parsed: $LOCAL_VERSION"
+else
+  echo "==> Local parsed: (kosong → akan di-update)"
+fi
+
+version_gt() {
+  local a="${1#v}" b="${2#v}"
+  [[ -z "$b" ]] && return 0
+  [[ "$a" == "$b" ]] && return 1
+  local IFS='.'
+  # shellcheck disable=SC2206
+  local pa=($a) pb=($b)
+  local i na nb n=${#pa[@]}
+  (( ${#pb[@]} > n )) && n=${#pb[@]}
+  for ((i = 0; i < n; i++)); do
+    na=${pa[i]:-0}; nb=${pb[i]:-0}
+    na=${na//[^0-9]/}; nb=${nb//[^0-9]/}
+    na=${na:-0}; nb=${nb:-0}
+    ((10#$na > 10#$nb)) && return 0
+    ((10#$na < 10#$nb)) && return 1
+  done
+  return 1
+}
+
+NEED_UPDATE=false
+if [[ "$FORCE" == true ]]; then
+  NEED_UPDATE=true
+  echo "==> Mode --force"
+elif version_gt "$REMOTE_VERSION" "$LOCAL_VERSION"; then
+  NEED_UPDATE=true
+  echo "==> Ada update: $LOCAL_VERSION → $REMOTE_VERSION"
+else
+  echo "==> Tidak ada update (local=$LOCAL_VERSION remote=$REMOTE_VERSION)"
+fi
 
 if [[ "$CHECK_ONLY" == true ]]; then
-  if [[ "$NEWER" == "1" ]]; then
-    echo "Update available: v$VERSION"
+  if [[ "$NEED_UPDATE" == true ]]; then
+    echo "Update tersedia: v$REMOTE_VERSION"
     exit 0
   fi
-  echo "Already up to date."
+  echo "Sudah versi terbaru."
   exit 1
 fi
 
-if [[ -n "$LOCAL_VERSION" && "$NEWER" != "1" ]]; then
-  echo "==> Already on latest (v$LOCAL_VERSION). Nothing to do."
+if [[ "$NEED_UPDATE" != true ]]; then
+  echo "    Lewati. Pakai ./update.sh --force untuk paksa timpa."
   exit 0
 fi
 
-ZIP_PATH="$TMP_DIR/$DIST_ASSET_NAME"
-echo "==> Downloading $DIST_ASSET_NAME"
-python3 - "$DOWNLOAD_URL" "$ZIP_PATH" <<'PY' || fail "Download failed"
-import sys, urllib.request
-url, out = sys.argv[1], sys.argv[2]
-req = urllib.request.Request(url, headers={"User-Agent": "FO-Simulator-Updater"})
-with urllib.request.urlopen(req, timeout=180) as res, open(out, "wb") as f:
-    while True:
-        chunk = res.read(1024 * 256)
-        if not chunk:
-            break
-        f.write(chunk)
-PY
+# --- download ---
+echo "==> Download → $ZIP_FILE"
+rm -f "$ZIP_FILE"
+download "$DOWNLOAD_URL" "$ZIP_FILE" || fail "download gagal"
+[[ -s "$ZIP_FILE" ]] || fail "zip kosong"
 
-echo "==> Installing into $DIST_DIR (overwrite)"
-mkdir -p "$DIST_DIR"
-python3 - "$ZIP_PATH" "$DIST_DIR" <<'PY' || fail "Failed to install files into dist"
-import shutil
-import sys
+# --- extract ke folder sementara ---
+echo "==> Extract zip..."
+EXTRACT_TMP="./.update-extract-tmp"
+rm -rf "$EXTRACT_TMP"
+mkdir -p "$EXTRACT_TMP"
+
+if have_cmd unzip; then
+  unzip -o -q "$ZIP_FILE" -d "$EXTRACT_TMP" || fail "unzip gagal"
+elif have_cmd python3; then
+  python3 <<PY || fail "extract gagal"
 import zipfile
-from pathlib import Path
-
-zip_path = Path(sys.argv[1])
-dist = Path(sys.argv[2])
-
-with zipfile.ZipFile(zip_path) as zf:
-    names = zf.namelist()
-    tops = {n.split("/", 1)[0] for n in names if n and not n.startswith("__MACOSX")}
-    tops = {t.rstrip("/") for t in tops if t}
-    prefix = ""
-    if len(tops) == 1:
-        only = next(iter(tops))
-        if all(n.startswith(only + "/") or n.rstrip("/") == only for n in names if n and not n.startswith("__MACOSX")):
-            if f"{only}/index.html" in names or "index.html" not in names:
-                prefix = only + "/"
-
-    if f"{prefix}index.html" not in names and "index.html" not in names:
-        raise SystemExit("Extracted zip has no index.html")
-
-    if dist.exists():
-        for item in list(dist.iterdir()):
-            if item.is_dir():
-                shutil.rmtree(item)
-            else:
-                item.unlink()
-    else:
-        dist.mkdir(parents=True, exist_ok=True)
-
-    for info in zf.infolist():
-        name = info.filename
-        if not name or name.startswith("__MACOSX") or name.endswith("/"):
-            continue
-        if prefix and not name.startswith(prefix):
-            continue
-        rel = name[len(prefix) :] if prefix else name
-        if not rel or rel.endswith("/"):
-            continue
-        target = dist / rel
-        target.parent.mkdir(parents=True, exist_ok=True)
-        with zf.open(info) as src, open(target, "wb") as out:
-            shutil.copyfileobj(src, out)
+zipfile.ZipFile("$ZIP_FILE").extractall("$EXTRACT_TMP")
 PY
-
-[[ -f "$DIST_DIR/index.html" ]] || fail "Install incomplete: missing index.html"
-
-if command -v systemctl >/dev/null 2>&1; then
-  systemctl reload apache2 >/dev/null 2>&1 || true
+else
+  fail "butuh unzip atau python3"
 fi
 
-echo "==> Done. Updated to $TAG"
-echo "    Hard-refresh the browser to load the new build."
+if [[ ! -f "$EXTRACT_TMP/index.html" ]]; then
+  nested="$(find "$EXTRACT_TMP" -mindepth 1 -maxdepth 1 -type d ! -name '__MACOSX' | head -n 1 || true)"
+  if [[ -n "${nested:-}" && -f "$nested/index.html" ]]; then
+    find "$nested" -mindepth 1 -maxdepth 1 -exec mv {} "$EXTRACT_TMP"/ \;
+    rmdir "$nested" 2>/dev/null || true
+  fi
+fi
+
+[[ -f "$EXTRACT_TMP/index.html" ]] || fail "zip tanpa index.html"
+
+# --- hapus file lama di ./ kecuali update.sh ---
+echo "==> Timpa file di $APP_DIR (update.sh tetap aman)"
+shopt -s nullglob dotglob
+for item in ./*; do
+  base="$(basename "$item")"
+  case "$base" in
+    update.sh|.update-extract-tmp|fo-simulator-dist.zip) continue ;;
+    .|..) continue ;;
+  esac
+  rm -rf "$item"
+done
+shopt -u nullglob dotglob
+
+# --- salin hasil extract ke ./ ---
+cp -r "$EXTRACT_TMP"/. ./
+rm -rf "$EXTRACT_TMP"
+rm -f "$ZIP_FILE"
+
+# pastikan version.json sesuai remote
+printf '{\n  "version": "%s"\n}\n' "$REMOTE_VERSION" > "$VERSION_FILE"
+
+[[ -f ./index.html ]] || fail "install gagal: ./index.html tidak ada"
+[[ -f ./update.sh ]] || fail "update.sh hilang (tidak seharusnya)"
+
+if have_cmd systemctl; then
+  systemctl reload apache2 >/dev/null 2>&1 || systemctl reload httpd >/dev/null 2>&1 || true
+fi
+
+echo "==> Selesai → v$REMOTE_VERSION"
+echo "    Cek: cat ./version.json"
+echo "    Hard-refresh browser (Ctrl+F5)."

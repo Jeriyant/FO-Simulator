@@ -35,6 +35,7 @@ jobs:
 
       - name: Pack dist
         run: |
+          chmod +x dist/update.sh
           cd dist
           zip -r ../fo-simulator-dist.zip .
 

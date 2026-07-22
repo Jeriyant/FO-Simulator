@@ -20,4 +20,5 @@ sudo apache2ctl configtest
 sudo systemctl reload apache2
 
 echo "==> Done. Open http://localhost/ in your browser."
-echo "    To update production build later:  $ROOT/update.sh"
+echo "    Production layout: DocumentRoot = folder berisi index.html + update.sh"
+echo "    Update later:  cd /var/www/html/FO-Simulator && ./update.sh"
